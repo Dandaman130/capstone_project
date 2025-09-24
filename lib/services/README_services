@@ -1,0 +1,8 @@
+Purpose
+This directory contains service classes that handle business logic, API calls, caching, and
+local storage.
+
+Usage
+Abstract logic away from UI
+Centralize data access and mutation
+Enable debugging, logging, and future persistence
