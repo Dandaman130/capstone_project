@@ -1,0 +1,8 @@
+Purpose
+This directory contains Riverpod providers that manage state, async data fetching, and dependency
+injection.
+
+Usage
+Reactively fetch and manage data
+Decouple logic from UI
+Enable caching, error handling, and loading states
