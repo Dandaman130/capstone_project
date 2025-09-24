@@ -1,12 +1,30 @@
-import 'package:flutter/material.dart';
-import 'screen1.dart';
-import 'screen2.dart';
-import 'screen3.dart';
-import 'screen4.dart';
+/*
+Current State 9/24/25 Last Modified v(beta 1.0)
+Consists of the app startup and bottom nav bar
 
-void main() {
-  runApp(const MyApp());
+Things to Conisder
+updating bottom nav bar with newer flutter package
+reformatting the code
+*/
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'screens/screen1.dart';
+import 'screens/screen2.dart';
+import 'screens/screen3.dart';
+import 'screens/screen4.dart';
+import 'services/local_product_loader.dart';
+
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); //Required for asset loading
+  await LocalProductLoader.load();           //Loading  sample_products.json
+  runApp(const ProviderScope(child: MyApp()));
 }
+
+//void main() => runApp(const ProviderScope(child: MyApp())); //The OG startup func
+
+
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -46,6 +64,9 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
+  //This is the bottom nav bar that will need to be replaced
+  //At some point, it is only temp so don't forget to
+  //REFACTOR CODE W/THIS IN MIND!!!!
   @override
   Widget build(BuildContext context) {
     return Scaffold(

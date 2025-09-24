@@ -1,0 +1,8 @@
+Purpose
+This directory contains all data models used throughout the app. These represent structured
+entities like scanned products, API responses, or user preferences.
+
+Usage
+Parse JSON responses from APIs
+Structure data for caching and display
+Enable type-safe access to product attributes
