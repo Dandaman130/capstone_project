@@ -1,5 +1,5 @@
 Purpose
-This directory contains service classes that handle business logic, API calls, caching, and
+This directory contains service classes that handle logic, API calls, caching, and
 local storage.
 
 Usage
