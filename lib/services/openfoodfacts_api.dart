@@ -18,7 +18,7 @@ class OpenFoodFactsApi {
 
     //UPADTE THIS when iterating versions so OFF.com knows who/version we are.
     final response = await http.get(url, headers: {
-      'User Agent': 'Unnamed Capstone Project v(beta 1.0) - Dart/Flutter - dandun914@gmail.com'
+      'User-Agent': 'Unnamed Capstone Project v(beta 1.0) - Dart/Flutter - dandun914@gmail.com'
     });
 
     if (response.statusCode == 200) {
