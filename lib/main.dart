@@ -15,7 +15,9 @@ import 'screens/screen3.dart';
 import 'screens/screen4.dart';
 import 'services/local_product_loader.dart';
 import 'package:flutter_snake_navigationbar/flutter_snake_navigationbar.dart';
+import { WorkOS } from '@workos-inc/node';
 
+const workos = new WorkOS('v7.72.1');
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Required for asset loading
   await LocalProductLoader.load();           // Loading sample_products.json
