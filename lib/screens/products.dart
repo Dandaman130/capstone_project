@@ -17,14 +17,14 @@ import 'package:flutter/material.dart';
 import '../services/scanned_product_cache.dart';
 import '../models/scanned_product.dart';
 
-class Screen2 extends StatefulWidget {
-  const Screen2({Key? key}) : super(key: key);
+class Products extends StatefulWidget {
+  const Products({Key? key}) : super(key: key);
 
   @override
-  State<Screen2> createState() => _Screen2State();
+  State<Products> createState() => _Screen2State();
 }
 
-class _Screen2State extends State<Screen2> {
+class _Screen2State extends State<Products> {
   String _searchQuery = '';
 
   @override

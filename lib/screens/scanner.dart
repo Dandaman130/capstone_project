@@ -19,14 +19,14 @@ import '../providers/product_provider.dart';
 import '../models/scanned_product.dart';
 import '../services/scanned_product_cache.dart';
 
-class Screen1 extends ConsumerStatefulWidget {
-  const Screen1({Key? key}) : super(key: key);
+class Scanner extends ConsumerStatefulWidget {
+  const Scanner({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<Screen1> createState() => _Screen1State();
+  ConsumerState<Scanner> createState() => _Screen1State();
 }
 
-class _Screen1State extends ConsumerState<Screen1> {
+class _Screen1State extends ConsumerState<Scanner> {
   final MobileScannerController _controller = MobileScannerController();
   String? _barcode;
   bool _hasScanned = false;
