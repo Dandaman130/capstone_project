@@ -1,6 +1,7 @@
 /*
-Current State 9/24/25 Last Modified v(beta 1.0)
+Current State 10/20/25 Last Modified v(Alpha 1.2)
 Consists of the app startup and bottom nav bar
+Updated to initialize Hive for persistent caching
 
 Update 9/29/25
 Snake bar has been implemented, though positioning needs to be fixed slightly
@@ -14,11 +15,18 @@ import 'screens/screen2.dart';
 import 'screens/screen3.dart';
 import 'screens/screen4.dart';
 import 'services/local_product_loader.dart';
+import 'services/product_cache_service.dart';
 import 'package:flutter_snake_navigationbar/flutter_snake_navigationbar.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // Required for asset loading
-  await LocalProductLoader.load();           // Loading sample_products.json
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Hive for persistent caching
+  await ProductCacheService.init();
+
+  // Load sample products
+  await LocalProductLoader.load();
+
   runApp(const ProviderScope(child: MyApp()));
 }
 
