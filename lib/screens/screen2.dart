@@ -14,8 +14,7 @@ items that match the search query
 - "No products found" if an item is searched and hasn't been scanned
 
 TODO:
--Implementation of hive package for caching
--Add actual Railway URL in railway_api_service.dart
+-Display image thumbnails for products
 -Design improvements
  */
 
@@ -151,137 +150,174 @@ class _Screen2State extends State<Screen2> {
 
           // If searching, show search results; otherwise show categories
           Expanded(
-            child: _searchQuery.isNotEmpty
-                ? _buildSearchResults(filteredProducts)
-                : _buildCategoryView(),
+            child: Stack(
+              children: [
+                // Always show category view in background
+                _buildCategoryView(),
+
+                // Show search overlay when typing
+                if (_searchQuery.isNotEmpty)
+                  _buildSearchOverlay(filteredProducts),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  // Build search results view - shows both cached and database results
-  Widget _buildSearchResults(List<ScannedProduct> filteredCachedProducts) {
+  // Build search overlay - shows as a card on top of category view
+  Widget _buildSearchOverlay(List<ScannedProduct> filteredCachedProducts) {
     final bool hasLocalResults = filteredCachedProducts.isNotEmpty;
     final bool hasDbResults = _searchResults.isNotEmpty;
     final bool noResults = !hasLocalResults && !hasDbResults && !_isSearching;
 
-    if (noResults) {
-      return const Center(
-        child: Text(
-          'No products found',
-          style: TextStyle(fontSize: 16),
-        ),
-      );
-    }
-
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      children: [
-        // Show cached/scanned products first
-        if (hasLocalResults) ...[
+    return Container(
+      color: Colors.black.withValues(alpha: 0.3), // Semi-transparent background
+      child: Column(
+        children: [
+          // Search results card
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              'Recently Scanned',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          ...filteredCachedProducts.map((product) => Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(8),
+            padding: const EdgeInsets.all(16.0),
+            child: Material(
+              elevation: 8,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.6, // Max 60% of screen height
                 ),
-                child: product.nutriScore.isNotEmpty && product.nutriScore != 'N/A'
-                    ? Center(
-                        child: Text(
-                          product.nutriScore,
-                          style: TextStyle(
-                            color: _getNutriScoreColor(product.nutriScore),
-                            fontWeight: FontWeight.bold,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: noResults
+                    ? Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Center(
+                          child: Text(
+                            _isSearching ? 'Searching...' : 'No products found',
+                            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                           ),
                         ),
                       )
-                    : Icon(Icons.shopping_bag, color: Colors.grey[400]),
-              ),
-              title: Text(product.name),
-              subtitle: Text('${product.brand} • ${product.quantity}'),
-              trailing: Icon(Icons.chevron_right),
-              onTap: () {
-                // TODO: Navigate to product details
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Tapped: ${product.name}')),
-                );
-              },
-            ),
-          )),
-        ],
+                    : ListView(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.all(8),
+                        children: [
+                          // Show cached/scanned products first
+                          if (hasLocalResults) ...[
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                              child: Text(
+                                'Recently Scanned',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            ),
+                            ...filteredCachedProducts.map((product) => ListTile(
+                              dense: true,
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: product.nutriScore.isNotEmpty && product.nutriScore != 'N/A'
+                                    ? Center(
+                                        child: Text(
+                                          product.nutriScore,
+                                          style: TextStyle(
+                                            color: _getNutriScoreColor(product.nutriScore),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      )
+                                    : Icon(Icons.shopping_bag, size: 20, color: Colors.grey[400]),
+                              ),
+                              title: Text(product.name, style: const TextStyle(fontSize: 14)),
+                              subtitle: Text(
+                                '${product.brand} • ${product.quantity}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              onTap: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Tapped: ${product.name}')),
+                                );
+                              },
+                            )),
+                          ],
 
-        // Show database search results
-        if (hasDbResults) ...[
-          Padding(
-            padding: EdgeInsets.only(top: hasLocalResults ? 16 : 8, bottom: 8),
-            child: Text(
-              'Database Results',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+                          // Show database search results
+                          if (hasDbResults) ...[
+                            if (hasLocalResults) const Divider(),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                              child: Text(
+                                'Database Results',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            ),
+                            ..._searchResults.map((product) => ListTile(
+                              dense: true,
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: Image.network(
+                                          product.imageUrl!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Icon(Icons.image, size: 20, color: Colors.grey[400]);
+                                          },
+                                        ),
+                                      )
+                                    : Icon(Icons.image, size: 20, color: Colors.grey[400]),
+                              ),
+                              title: Text(product.name, style: const TextStyle(fontSize: 14)),
+                              subtitle: Text(
+                                product.categories.isNotEmpty
+                                    ? product.categories.split(',').first
+                                    : 'No category',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              onTap: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Tapped: ${product.name}')),
+                                );
+                              },
+                            )),
+                          ],
+
+                          // Show loading indicator while searching
+                          if (_isSearching)
+                            const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            ),
+                        ],
+                      ),
               ),
             ),
           ),
-          ..._searchResults.map((product) => Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: product.imageUrl != null && product.imageUrl!.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          product.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Icon(Icons.image, color: Colors.grey[400]);
-                          },
-                        ),
-                      )
-                    : Icon(Icons.image, color: Colors.grey[400]),
-              ),
-              title: Text(product.name),
-              subtitle: Text(
-                product.categories.isNotEmpty
-                    ? product.categories.split(',').first
-                    : 'No category',
-              ),
-              trailing: Icon(Icons.chevron_right),
-              onTap: () {
-                // TODO: Navigate to product details
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Tapped: ${product.name}')),
-                );
-              },
-            ),
-          )),
         ],
-
-        // Show loading indicator while searching
-        if (_isSearching)
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-      ],
+      ),
     );
   }
 
