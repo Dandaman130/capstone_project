@@ -4,6 +4,10 @@ const { Pool } = require('pg');
 const app = express();
 const port = process.env.PORT || 3000;
 
+console.log('Starting server...');
+console.log('PORT:', port);
+console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
+
 // Connect to Railway Postgres
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -11,9 +15,16 @@ const pool = new Pool({
 
 app.use(express.json());
 
+// Add request logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
 // Health check endpoint
 app.get('/', (req, res) => {
-  res.json({ status: 'Server is running' });
+  console.log('Health check endpoint hit');
+  res.json({ status: 'Server is running', timestamp: new Date().toISOString() });
 });
 
 // Get all products
@@ -105,4 +116,7 @@ app.get('/api/categories-batch', async (req, res) => {
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
+  console.log(`Server is listening on 0.0.0.0:${port}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log('Ready to accept connections');
 });
