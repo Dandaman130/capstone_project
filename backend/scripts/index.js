@@ -174,6 +174,44 @@ app.get('/api/categories-batch', async (req, res) => {
   }
 });
 
+// Debug endpoint: Get sample of unique categories
+app.get('/api/debug/categories', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ error: 'Database not configured' });
+  }
+  try {
+    const result = await pool.query(
+      'SELECT DISTINCT categories FROM products WHERE categories IS NOT NULL LIMIT 50'
+    );
+    res.json({
+      count: result.rows.length,
+      samples: result.rows.map(row => row.categories)
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Debug endpoint: Get database stats
+app.get('/api/debug/stats', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ error: 'Database not configured' });
+  }
+  try {
+    const countResult = await pool.query('SELECT COUNT(*) FROM products');
+    const sampleResult = await pool.query('SELECT * FROM products LIMIT 5');
+
+    res.json({
+      totalProducts: countResult.rows[0].count,
+      sampleProducts: sampleResult.rows
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error', message: err.message });
+  }
+});
+
 // Catch-all route for debugging
 app.use('*', (req, res) => {
   console.log('>>> Catch-all hit:', req.method, req.originalUrl);
