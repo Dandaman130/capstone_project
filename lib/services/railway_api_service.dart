@@ -8,10 +8,9 @@ Handles all API calls to the Railway backend server
 */
 
 class RailwayApiService {
-  // TODO: Replace this with your actual Railway deployment URL
-  // You can find this in Railway → Deployments → Your deployment → Domain
-  // It should look like: https://your-app-name.up.railway.app
-  static const String baseUrl = 'capstoneproject-production-acf9.up.railway.app';
+  // Railway deployment URL
+  // Updated: December 2, 2025 - Working deployment
+  static const String baseUrl = 'https://capstoneproject-production-acf9.up.railway.app';
 
   // Get all products (with optional limit)
   static Future<List<Product>> getAllProducts({int limit = 100}) async {
