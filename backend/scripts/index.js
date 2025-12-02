@@ -1,6 +1,8 @@
 const express = require('express');
 const { Pool } = require('pg');
 
+// Last updated: 2025-12-01 - Force Railway deployment
+
 const app = express();
 const port = process.env.PORT || 3000;
 
