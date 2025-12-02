@@ -38,6 +38,10 @@ class _Screen2State extends State<Screen2> {
   Map<String, List<Product>> _categoryProducts = {};
   bool _isLoading = true;
 
+  // Database search results
+  List<Product> _searchResults = [];
+  bool _isSearching = false;
+
   // Updated to use actual categories from the database
   final List<String> _categories = ['Snacks', 'Beverages'];
 
@@ -63,6 +67,38 @@ class _Screen2State extends State<Screen2> {
     });
   }
 
+  // Search Railway database for products
+  Future<void> _searchDatabase(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      final results = await RailwayApiService.searchProducts(query);
+
+      // Only update if the search query hasn't changed
+      if (query == _searchQuery) {
+        setState(() {
+          _searchResults = results;
+          _isSearching = false;
+        });
+      }
+    } catch (e) {
+      print('Search error: $e');
+      setState(() {
+        _isSearching = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     //Filter scanned products by search query
@@ -85,6 +121,16 @@ class _Screen2State extends State<Screen2> {
               decoration: InputDecoration(
                 hintText: 'Search products...',
                 prefixIcon: const Icon(Icons.search),
+                suffixIcon: _isSearching
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: Padding(
+                          padding: EdgeInsets.all(12.0),
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : null,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -92,6 +138,12 @@ class _Screen2State extends State<Screen2> {
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
+                });
+                // Search database after user stops typing for 500ms
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  if (value == _searchQuery) {
+                    _searchDatabase(value);
+                  }
                 });
               },
             ),
@@ -108,9 +160,13 @@ class _Screen2State extends State<Screen2> {
     );
   }
 
-  // Build search results view
-  Widget _buildSearchResults(List<ScannedProduct> filteredProducts) {
-    if (filteredProducts.isEmpty) {
+  // Build search results view - shows both cached and database results
+  Widget _buildSearchResults(List<ScannedProduct> filteredCachedProducts) {
+    final bool hasLocalResults = filteredCachedProducts.isNotEmpty;
+    final bool hasDbResults = _searchResults.isNotEmpty;
+    final bool noResults = !hasLocalResults && !hasDbResults && !_isSearching;
+
+    if (noResults) {
       return const Center(
         child: Text(
           'No products found',
@@ -119,21 +175,113 @@ class _Screen2State extends State<Screen2> {
       );
     }
 
-    return ListView.builder(
-      itemCount: filteredProducts.length,
-      itemBuilder: (context, index) {
-        final product = filteredProducts[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-          child: ListTile(
-            title: Text(product.name),
-            subtitle: Text('Brand: ${product.brand}\n'
-                'Nutri-Score: ${product.nutriScore}'),
-            trailing: Text(product.quantity),
-            isThreeLine: true,
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      children: [
+        // Show cached/scanned products first
+        if (hasLocalResults) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              'Recently Scanned',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
-        );
-      },
+          ...filteredCachedProducts.map((product) => Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              leading: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: product.nutriScore.isNotEmpty && product.nutriScore != 'N/A'
+                    ? Center(
+                        child: Text(
+                          product.nutriScore,
+                          style: TextStyle(
+                            color: _getNutriScoreColor(product.nutriScore),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    : Icon(Icons.shopping_bag, color: Colors.grey[400]),
+              ),
+              title: Text(product.name),
+              subtitle: Text('${product.brand} • ${product.quantity}'),
+              trailing: Icon(Icons.chevron_right),
+              onTap: () {
+                // TODO: Navigate to product details
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Tapped: ${product.name}')),
+                );
+              },
+            ),
+          )),
+        ],
+
+        // Show database search results
+        if (hasDbResults) ...[
+          Padding(
+            padding: EdgeInsets.only(top: hasLocalResults ? 16 : 8, bottom: 8),
+            child: Text(
+              'Database Results',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ..._searchResults.map((product) => Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              leading: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          product.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(Icons.image, color: Colors.grey[400]);
+                          },
+                        ),
+                      )
+                    : Icon(Icons.image, color: Colors.grey[400]),
+              ),
+              title: Text(product.name),
+              subtitle: Text(
+                product.categories.isNotEmpty
+                    ? product.categories.split(',').first
+                    : 'No category',
+              ),
+              trailing: Icon(Icons.chevron_right),
+              onTap: () {
+                // TODO: Navigate to product details
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Tapped: ${product.name}')),
+                );
+              },
+            ),
+          )),
+        ],
+
+        // Show loading indicator while searching
+        if (_isSearching)
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+      ],
     );
   }
 
