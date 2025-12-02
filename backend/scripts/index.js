@@ -35,6 +35,20 @@ if (process.env.DATABASE_URL) {
 // Middleware
 app.use(express.json());
 
+// CORS headers for all requests
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+
+  next();
+});
+
 // Request logging - BEFORE routes
 app.use((req, res, next) => {
   console.log(`[REQUEST] ${req.method} ${req.url} from ${req.ip}`);
