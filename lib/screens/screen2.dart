@@ -18,7 +18,6 @@ TODO:
 -Design improvements
  */
 
-
 import 'package:flutter/material.dart';
 import '../services/scanned_product_cache.dart';
 import '../services/railway_api_service.dart';
@@ -103,15 +102,15 @@ class _Screen2State extends State<Screen2> {
   Widget build(BuildContext context) {
     //Filter scanned products by search query
     final List<ScannedProduct> filteredProducts = ScannedProductCache.all
-        .where((product) =>
-    product.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        product.brand.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .where(
+          (product) =>
+              product.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              product.brand.toLowerCase().contains(_searchQuery.toLowerCase()),
+        )
         .toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Products'),
-      ),
+      appBar: AppBar(title: const Text('Products')),
       body: Column(
         children: [
           //Search bar
@@ -185,7 +184,9 @@ class _Screen2State extends State<Screen2> {
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.6, // Max 60% of screen height
+                  maxHeight:
+                      MediaQuery.of(context).size.height *
+                      0.6, // Max 60% of screen height
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -197,7 +198,10 @@ class _Screen2State extends State<Screen2> {
                         child: Center(
                           child: Text(
                             _isSearching ? 'Searching...' : 'No products found',
-                            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
                           ),
                         ),
                       )
@@ -208,7 +212,10 @@ class _Screen2State extends State<Screen2> {
                           // Show cached/scanned products first
                           if (hasLocalResults) ...[
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
                               child: Text(
                                 'Recently Scanned',
                                 style: TextStyle(
@@ -218,51 +225,67 @@ class _Screen2State extends State<Screen2> {
                                 ),
                               ),
                             ),
-                            ...filteredCachedProducts.map((product) => ListTile(
-                              dense: true,
-                              leading: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[300],
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: product.nutriScore.isNotEmpty && product.nutriScore != 'N/A'
-                                    ? Center(
-                                        child: Text(
-                                          product.nutriScore,
-                                          style: TextStyle(
-                                            color: _getNutriScoreColor(product.nutriScore),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      )
-                                    : Icon(Icons.shopping_bag, size: 20, color: Colors.grey[400]),
-                              ),
-                              title: Text(product.name, style: const TextStyle(fontSize: 14)),
-                              subtitle: Text(
-                                '${product.brand} • ${product.quantity}',
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ProductDetailScreen(
-                                      scannedProduct: product,
-                                    ),
+                            ...filteredCachedProducts.map(
+                              (product) => ListTile(
+                                dense: true,
+                                leading: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
-                                );
-                              },
-                            )),
+                                  child:
+                                      product.nutriScore.isNotEmpty &&
+                                          product.nutriScore != 'N/A'
+                                      ? Center(
+                                          child: Text(
+                                            product.nutriScore,
+                                            style: TextStyle(
+                                              color: _getNutriScoreColor(
+                                                product.nutriScore,
+                                              ),
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.shopping_bag,
+                                          size: 20,
+                                          color: Colors.grey[400],
+                                        ),
+                                ),
+                                title: Text(
+                                  product.name,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                                subtitle: Text(
+                                  '${product.brand} • ${product.quantity}',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ProductDetailScreen(
+                                        scannedProduct: product,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                           ],
 
                           // Show database search results
                           if (hasDbResults) ...[
                             if (hasLocalResults) const Divider(),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
                               child: Text(
                                 'Database Results',
                                 style: TextStyle(
@@ -272,55 +295,71 @@ class _Screen2State extends State<Screen2> {
                                 ),
                               ),
                             ),
-                            ..._searchResults.map((product) => ListTile(
-                              dense: true,
-                              leading: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[300],
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: product.imageUrl != null && product.imageUrl!.isNotEmpty
-                                    ? ClipRRect(
-                                        borderRadius: BorderRadius.circular(6),
-                                        child: Image.network(
-                                          product.imageUrl!,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return Icon(Icons.image, size: 20, color: Colors.grey[400]);
-                                          },
-                                        ),
-                                      )
-                                    : Icon(Icons.image, size: 20, color: Colors.grey[400]),
-                              ),
-                              title: Text(product.name, style: const TextStyle(fontSize: 14)),
-                              subtitle: Text(
-                                product.categories.isNotEmpty
-                                    ? product.categories.split(',').first
-                                    : 'No category',
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ProductDetailScreen(
-                                      railwayProduct: product,
-                                    ),
+                            ..._searchResults.map(
+                              (product) => ListTile(
+                                dense: true,
+                                leading: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
-                                );
-                              },
-                            )),
+                                  child:
+                                      product.imageUrl != null &&
+                                          product.imageUrl!.isNotEmpty
+                                      ? ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                          child: Image.network(
+                                            product.imageUrl!,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                                  return Icon(
+                                                    Icons.image,
+                                                    size: 20,
+                                                    color: Colors.grey[400],
+                                                  );
+                                                },
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.image,
+                                          size: 20,
+                                          color: Colors.grey[400],
+                                        ),
+                                ),
+                                title: Text(
+                                  product.name,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                                subtitle: Text(
+                                  product.categories.isNotEmpty
+                                      ? product.categories.split(',').first
+                                      : 'No category',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ProductDetailScreen(
+                                        railwayProduct: product,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                           ],
 
                           // Show loading indicator while searching
                           if (_isSearching)
                             const Padding(
                               padding: EdgeInsets.all(16),
-                              child: Center(
-                                child: CircularProgressIndicator(),
-                              ),
+                              child: Center(child: CircularProgressIndicator()),
                             ),
                         ],
                       ),
@@ -335,9 +374,7 @@ class _Screen2State extends State<Screen2> {
   // Build category view with horizontal scrolling products
   Widget _buildCategoryView() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     return RefreshIndicator(
@@ -364,9 +401,9 @@ class _Screen2State extends State<Screen2> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: Text(
             'Recently Scanned',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
         ),
         SizedBox(
@@ -404,9 +441,9 @@ class _Screen2State extends State<Screen2> {
             children: [
               Text(
                 _formatCategoryName(category),
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               TextButton(
                 onPressed: () {
@@ -445,9 +482,8 @@ class _Screen2State extends State<Screen2> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ProductDetailScreen(
-                railwayProduct: product,
-              ),
+              builder: (context) =>
+                  ProductDetailScreen(railwayProduct: product),
             ),
           );
         },
@@ -472,7 +508,11 @@ class _Screen2State extends State<Screen2> {
                           product.imageUrl!,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return Icon(Icons.image, size: 50, color: Colors.grey[400]);
+                            return Icon(
+                              Icons.image,
+                              size: 50,
+                              color: Colors.grey[400],
+                            );
                           },
                         ),
                       )
@@ -505,9 +545,8 @@ class _Screen2State extends State<Screen2> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ProductDetailScreen(
-                scannedProduct: product,
-              ),
+              builder: (context) =>
+                  ProductDetailScreen(scannedProduct: product),
             ),
           );
         },
@@ -527,14 +566,22 @@ class _Screen2State extends State<Screen2> {
                       color: Colors.grey[300],
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.shopping_bag, size: 50, color: Colors.grey[400]),
+                    child: Icon(
+                      Icons.shopping_bag,
+                      size: 50,
+                      color: Colors.grey[400],
+                    ),
                   ),
-                  if (product.nutriScore.isNotEmpty && product.nutriScore != 'N/A')
+                  if (product.nutriScore.isNotEmpty &&
+                      product.nutriScore != 'N/A')
                     Positioned(
                       top: 4,
                       right: 4,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: _getNutriScoreColor(product.nutriScore),
                           borderRadius: BorderRadius.circular(4),

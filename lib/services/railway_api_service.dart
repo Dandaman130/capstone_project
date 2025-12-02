@@ -102,45 +102,45 @@ class RailwayApiService {
       final categoriesParam = categories.join(',');
       final url = '$baseUrl/api/categories-batch?categories=$categoriesParam&limit=$limit';
 
-      print('🔍 Fetching from URL: $url');
-      print('🔍 Categories requested: $categories');
+      print('Fetching from URL: $url');
+      print('Categories requested: $categories');
 
       final response = await http.get(
         Uri.parse(url),
       ).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
-          print('❌ Request timed out after 30 seconds');
+          print('Request timed out after 30 seconds');
           throw Exception('Request timeout');
         },
       );
 
-      print('📡 Response status: ${response.statusCode}');
-      print('📡 Response body length: ${response.body.length}');
+      print('Response status: ${response.statusCode}');
+      print('Response body length: ${response.body.length}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         final Map<String, List<Product>> results = {};
 
-        print('📦 Categories in response: ${data.keys.toList()}');
+        print('Categories in response: ${data.keys.toList()}');
 
         data.forEach((category, products) {
           final productList = (products as List)
               .map((item) => Product.fromJson(item))
               .toList();
           results[category] = productList;
-          print('✅ Category "$category": ${productList.length} products');
+          print('Category "$category": ${productList.length} products');
         });
 
         return results;
       } else {
-        print('❌ Server returned error: ${response.statusCode}');
-        print('❌ Response body: ${response.body}');
+        print('Server returned error: ${response.statusCode}');
+        print('Response body: ${response.body}');
         throw Exception('Failed to load products for categories: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error fetching products by categories: $e');
-      print('❌ Error type: ${e.runtimeType}');
+      print('Error fetching products by categories: $e');
+      print('Error type: ${e.runtimeType}');
       return {};
     }
   }

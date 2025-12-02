@@ -98,8 +98,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
-              ? _buildErrorView()
-              : _buildProductDetails(),
+          ? _buildErrorView()
+          : _buildProductDetails(),
     );
   }
 
@@ -155,7 +155,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     child: CircularProgressIndicator(
                       value: loadingProgress.expectedTotalBytes != null
                           ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
+                                loadingProgress.expectedTotalBytes!
                           : null,
                     ),
                   );
@@ -179,8 +179,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 Text(
                   product.name,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
 
@@ -192,10 +192,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     Expanded(
                       child: Text(
                         product.brand,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[700],
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                       ),
                     ),
                   ],
@@ -226,19 +223,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 const SizedBox(height: 16),
 
                 // Barcode
-                _buildInfoCard(
-                  'Barcode',
-                  product.barcode,
-                  Icons.qr_code,
-                ),
+                _buildInfoCard('Barcode', product.barcode, Icons.qr_code),
                 const SizedBox(height: 24),
 
                 // Ingredients Section
                 Text(
                   'Ingredients',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 Container(
@@ -251,10 +244,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   child: Text(
                     product.ingredients,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
+                    style: const TextStyle(fontSize: 14, height: 1.5),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -268,7 +258,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle, size: 16, color: Colors.green[700]),
+                      Icon(
+                        Icons.check_circle,
+                        size: 16,
+                        color: Colors.green[700],
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -300,16 +294,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         children: [
           Icon(Icons.image, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 8),
-          Text(
-            'No image available',
-            style: TextStyle(color: Colors.grey[600]),
-          ),
+          Text('No image available', style: TextStyle(color: Colors.grey[600])),
         ],
       ),
     );
   }
 
-  Widget _buildInfoCard(String label, String value, IconData icon, {Color? color}) {
+  Widget _buildInfoCard(
+    String label,
+    String value,
+    IconData icon, {
+    Color? color,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -367,4 +363,3 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 }
-
