@@ -15,8 +15,16 @@ if (process.env.DATABASE_URL) {
   try {
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
+      // Don't wait for connection on startup
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 30000,
     });
-    console.log('✓ Database pool created');
+    console.log('✓ Database pool created (will connect on first query)');
+
+    // Test connection in background (non-blocking)
+    pool.query('SELECT NOW()')
+      .then(() => console.log('✓ Database connection verified'))
+      .catch((err) => console.error('✗ Database connection test failed:', err.message));
   } catch (err) {
     console.error('✗ Database pool creation failed:', err);
   }
