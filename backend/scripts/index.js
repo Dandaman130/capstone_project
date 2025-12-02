@@ -1,44 +1,53 @@
 const express = require('express');
 const { Pool } = require('pg');
 
-// Last updated: 2025-12-01 - Force Railway deployment
-
 const app = express();
 const port = process.env.PORT || 3000;
 
-console.log('Starting server...');
+console.log('=== Server Initialization ===');
 console.log('PORT:', port);
 console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
+console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
 
 // Connect to Railway Postgres
 let pool = null;
 if (process.env.DATABASE_URL) {
-  pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-  });
-  console.log('Database pool created');
+  try {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+    });
+    console.log('✓ Database pool created');
+  } catch (err) {
+    console.error('✗ Database pool creation failed:', err);
+  }
 } else {
-  console.warn('WARNING: DATABASE_URL not set - database queries will fail');
+  console.warn('⚠ WARNING: DATABASE_URL not set');
 }
 
+// Middleware
 app.use(express.json());
 
-// Add request logging
+// Request logging - BEFORE routes
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  console.log(`[REQUEST] ${req.method} ${req.url} from ${req.ip}`);
   next();
 });
 
-// Health check endpoint
+// Railway health check endpoint (they might check /health instead of /)
+app.get('/health', (req, res) => {
+  console.log('>>> /health endpoint hit <<<');
+  res.status(200).send('OK');
+});
+
+// Root health check
 app.get('/', (req, res) => {
-  console.log('Health check endpoint hit');
-  // Send response immediately
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({
-    status: 'Server is running',
+  console.log('>>> / endpoint hit <<<');
+  res.status(200).json({
+    status: 'running',
     timestamp: new Date().toISOString(),
-    database: process.env.DATABASE_URL ? 'connected' : 'not configured'
-  }));
+    database: pool ? 'connected' : 'not configured',
+    port: port
+  });
 });
 
 // Get all products
@@ -145,29 +154,37 @@ app.get('/api/categories-batch', async (req, res) => {
 
 // Catch-all route for debugging
 app.use('*', (req, res) => {
-  console.log('Catch-all route hit for:', req.method, req.originalUrl);
+  console.log('>>> Catch-all hit:', req.method, req.originalUrl);
   res.status(404).json({ error: 'Not found', path: req.originalUrl });
 });
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('Global error handler caught:', err);
-  res.status(500).json({ error: 'Internal server error', message: err.message });
+  console.error('!!! Global error:', err.message);
+  console.error(err.stack);
+  res.status(500).json({ error: 'Server error', message: err.message });
 });
 
-// Catch unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+// Start server
+const server = app.listen(port, '0.0.0.0', () => {
+  console.log('=== Server Started ===');
+  console.log(`✓ Listening on 0.0.0.0:${port}`);
+  console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log('✓ Server ready to accept connections');
+  console.log('======================');
 });
 
-// Catch uncaught exceptions
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+// Handle server errors
+server.on('error', (err) => {
+  console.error('!!! Server error:', err);
 });
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Server running on port ${port}`);
-  console.log(`Server is listening on 0.0.0.0:${port}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log('Ready to accept connections');
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, closing server...');
+  server.close(() => {
+    console.log('Server closed');
+    if (pool) pool.end();
+    process.exit(0);
+  });
 });
