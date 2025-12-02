@@ -11,9 +11,15 @@ console.log('PORT:', port);
 console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
 
 // Connect to Railway Postgres
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+let pool = null;
+if (process.env.DATABASE_URL) {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+  });
+  console.log('Database pool created');
+} else {
+  console.warn('WARNING: DATABASE_URL not set - database queries will fail');
+}
 
 app.use(express.json());
 
@@ -26,11 +32,18 @@ app.use((req, res, next) => {
 // Health check endpoint
 app.get('/', (req, res) => {
   console.log('Health check endpoint hit');
-  res.json({ status: 'Server is running', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'Server is running',
+    timestamp: new Date().toISOString(),
+    database: process.env.DATABASE_URL ? 'connected' : 'not configured'
+  });
 });
 
 // Get all products
 app.get('/api/products', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ error: 'Database not configured' });
+  }
   try {
     const result = await pool.query('SELECT * FROM products LIMIT 100');
     res.json(result.rows);
@@ -42,6 +55,9 @@ app.get('/api/products', async (req, res) => {
 
 // Get product by barcode
 app.get('/api/products/:barcode', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ error: 'Database not configured' });
+  }
   try {
     const { barcode } = req.params;
     const result = await pool.query('SELECT * FROM products WHERE barcode = $1', [barcode]);
@@ -59,6 +75,9 @@ app.get('/api/products/:barcode', async (req, res) => {
 
 // Search products by name
 app.get('/api/search', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ error: 'Database not configured' });
+  }
   try {
     const { q } = req.query;
     const result = await pool.query(
@@ -74,6 +93,9 @@ app.get('/api/search', async (req, res) => {
 
 // Get products by category
 app.get('/api/categories/:category', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ error: 'Database not configured' });
+  }
   try {
     const { category } = req.params;
     const limit = req.query.limit || 20;
@@ -91,6 +113,9 @@ app.get('/api/categories/:category', async (req, res) => {
 
 // Get products from multiple categories
 app.get('/api/categories-batch', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ error: 'Database not configured' });
+  }
   try {
     const categories = req.query.categories?.split(',') || [];
     const limit = req.query.limit || 20;
