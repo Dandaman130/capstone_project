@@ -9,8 +9,8 @@ Handles all API calls to the Railway backend server
 
 class RailwayApiService {
   // Railway deployment URL
-  // Updated: December 2, 2025 - Working deployment
-  static const String baseUrl = 'https://capstoneproject-production-acf9.up.railway.app';
+  // Updated: December 2, 2025 - New domain after regeneration
+  static const String baseUrl = 'https://capstoneproject-production-fb1c.up.railway.app';
 
   // Get all products (with optional limit)
   static Future<List<Product>> getAllProducts({int limit = 100}) async {
@@ -100,26 +100,47 @@ class RailwayApiService {
   }) async {
     try {
       final categoriesParam = categories.join(',');
+      final url = '$baseUrl/api/categories-batch?categories=$categoriesParam&limit=$limit';
+
+      print('🔍 Fetching from URL: $url');
+      print('🔍 Categories requested: $categories');
+
       final response = await http.get(
-        Uri.parse('$baseUrl/api/categories-batch?categories=$categoriesParam&limit=$limit'),
+        Uri.parse(url),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          print('❌ Request timed out after 30 seconds');
+          throw Exception('Request timeout');
+        },
       );
+
+      print('📡 Response status: ${response.statusCode}');
+      print('📡 Response body length: ${response.body.length}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         final Map<String, List<Product>> results = {};
 
+        print('📦 Categories in response: ${data.keys.toList()}');
+
         data.forEach((category, products) {
-          results[category] = (products as List)
+          final productList = (products as List)
               .map((item) => Product.fromJson(item))
               .toList();
+          results[category] = productList;
+          print('✅ Category "$category": ${productList.length} products');
         });
 
         return results;
       } else {
-        throw Exception('Failed to load products for categories');
+        print('❌ Server returned error: ${response.statusCode}');
+        print('❌ Response body: ${response.body}');
+        throw Exception('Failed to load products for categories: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error fetching products by categories: $e');
+      print('❌ Error fetching products by categories: $e');
+      print('❌ Error type: ${e.runtimeType}');
       return {};
     }
   }
