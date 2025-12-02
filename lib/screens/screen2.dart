@@ -24,6 +24,7 @@ import '../services/scanned_product_cache.dart';
 import '../services/railway_api_service.dart';
 import '../models/scanned_product.dart';
 import '../models/product.dart';
+import 'product_detail_screen.dart';
 
 class Screen2 extends StatefulWidget {
   const Screen2({Key? key}) : super(key: key);
@@ -245,8 +246,13 @@ class _Screen2State extends State<Screen2> {
                                 style: const TextStyle(fontSize: 12),
                               ),
                               onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Tapped: ${product.name}')),
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ProductDetailScreen(
+                                      scannedProduct: product,
+                                    ),
+                                  ),
                                 );
                               },
                             )),
@@ -296,8 +302,13 @@ class _Screen2State extends State<Screen2> {
                                 style: const TextStyle(fontSize: 12),
                               ),
                               onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Tapped: ${product.name}')),
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ProductDetailScreen(
+                                      railwayProduct: product,
+                                    ),
+                                  ),
                                 );
                               },
                             )),
@@ -431,9 +442,13 @@ class _Screen2State extends State<Screen2> {
       margin: const EdgeInsets.symmetric(horizontal: 4),
       child: InkWell(
         onTap: () {
-          // TODO: Navigate to product details
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Tapped: ${product.name}')),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProductDetailScreen(
+                railwayProduct: product,
+              ),
+            ),
           );
         },
         child: Container(
@@ -487,9 +502,13 @@ class _Screen2State extends State<Screen2> {
       margin: const EdgeInsets.symmetric(horizontal: 4),
       child: InkWell(
         onTap: () {
-          // TODO: Navigate to product details
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Tapped: ${product.name}')),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProductDetailScreen(
+                scannedProduct: product,
+              ),
+            ),
           );
         },
         child: Container(
