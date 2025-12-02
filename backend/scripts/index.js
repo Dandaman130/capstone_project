@@ -59,6 +59,50 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
+// Get products by category
+app.get('/api/categories/:category', async (req, res) => {
+  try {
+    const { category } = req.params;
+    const limit = req.query.limit || 20;
+
+    const result = await pool.query(
+      'SELECT * FROM products WHERE categories ILIKE $1 LIMIT $2',
+      [`%${category}%`, limit]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Get products from multiple categories
+app.get('/api/categories-batch', async (req, res) => {
+  try {
+    const categories = req.query.categories?.split(',') || [];
+    const limit = req.query.limit || 20;
+
+    if (categories.length === 0) {
+      return res.json({});
+    }
+
+    const results = {};
+
+    for (const category of categories) {
+      const result = await pool.query(
+        'SELECT * FROM products WHERE categories ILIKE $1 LIMIT $2',
+        [`%${category}%`, limit]
+      );
+      results[category] = result.rows;
+    }
+
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
