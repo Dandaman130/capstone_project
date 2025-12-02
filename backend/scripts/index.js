@@ -32,11 +32,13 @@ app.use((req, res, next) => {
 // Health check endpoint
 app.get('/', (req, res) => {
   console.log('Health check endpoint hit');
-  res.json({
+  // Send response immediately
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({
     status: 'Server is running',
     timestamp: new Date().toISOString(),
     database: process.env.DATABASE_URL ? 'connected' : 'not configured'
-  });
+  }));
 });
 
 // Get all products
@@ -139,6 +141,12 @@ app.get('/api/categories-batch', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'Database error' });
   }
+});
+
+// Catch-all route for debugging
+app.use('*', (req, res) => {
+  console.log('Catch-all route hit for:', req.method, req.originalUrl);
+  res.status(404).json({ error: 'Not found', path: req.originalUrl });
 });
 
 // Global error handler
