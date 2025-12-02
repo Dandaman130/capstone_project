@@ -38,7 +38,8 @@ class _Screen2State extends State<Screen2> {
   Map<String, List<Product>> _categoryProducts = {};
   bool _isLoading = true;
 
-  final List<String> _categories = ['plant based', 'snacks'];
+  // Updated to use actual categories from the database
+  final List<String> _categories = ['Snacks', 'Beverages'];
 
   @override
   void initState() {
