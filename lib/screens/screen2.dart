@@ -1,11 +1,12 @@
 /*
+Current State 12/3/25 Last Modified v(Alpha 2.0)
 Changes Made: Dec 1, 2025
 - Integrated Railway API to fetch products by categories
 - Added category sections for "plant based" and "snacks" below search bar
 - Horizontal scrolling product cards for each category
 - Search bar now searches both cached scanned products and Railway database
 
-Previous Changes (Sept 29, 2025):
+Previous Changes (9/29/25):
 Implemented search bar
 - Realtime search that filters products by name or brand
 - Products are stored in ScannedProductCache.all; screen filters list to display
@@ -16,6 +17,7 @@ items that match the search query
 TODO:
 -Display image thumbnails for products
 -Design improvements
+-Refactor screen title to something other than "Screen 2"
  */
 
 import 'package:flutter/material.dart';
