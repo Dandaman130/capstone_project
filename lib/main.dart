@@ -1,5 +1,5 @@
 /*
-Current State 9/24/25 Last Modified v(beta 1.0)
+Current State 12/3/25 Last Modified v(Alpha 2.0)
 Consists of the app startup and bottom nav bar
 
 Update 9/29/25
