@@ -1,10 +1,10 @@
 /*
-Current State 9/24/25 Last Modified v(beta 1.0)
-Consists of the app startup and bottom nav bar
+Current State 12/3/25 Last Modified v(Alpha 2.0)
+-Consists of the app startup and bottom nav bar
 
 Update 9/29/25
-Snake bar has been implemented, though positioning needs to be fixed slightly
-Code still needs to be reformatted
+-Snake bar has been implemented, though positioning needs to be fixed slightly
+-Code still needs to be reformatted
 */
 
 import 'package:flutter/material.dart';

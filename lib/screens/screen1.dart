@@ -1,15 +1,14 @@
 /*
-Current State 9/24/25 Last Modified v(beta 1.0)
-This is the Scanner Page this currently is setup to scan a barcode once, then
+Current State 9/24/25 Last Modified v(Alpha 1.0)
+-This is the Scanner Page this currently is setup to scan a barcode once, then
 reference the scanned_product_cache and if item is found there it returns it
 if not then make API call to openfoodfacts_api,
-there are also various debug statements throughout so makesure the products are
+-there are also various debug statements throughout so makesure the products are
 being logged
 
 Things to Consider
-breaking down alot of these components into modules so that there isnt as much
-clutter in this screen
-Also redesign the interface
+-breaking down alot of these components into modules so that there isnt as much clutter in this screen
+-redesign the interface
 */
 
 import 'package:flutter/material.dart';
