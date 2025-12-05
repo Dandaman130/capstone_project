@@ -174,6 +174,41 @@ app.get('/api/categories-batch', async (req, res) => {
   }
 });
 
+// Get specific products by barcodes (for prioritized display)
+app.get('/api/products-by-barcodes', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ error: 'Database not configured' });
+  }
+  try {
+    const barcodes = req.query.barcodes?.split(',') || [];
+
+    if (barcodes.length === 0) {
+      return res.json([]);
+    }
+
+    // Create placeholders for parameterized query
+    const placeholders = barcodes.map((_, i) => `$${i + 1}`).join(',');
+    const query = `SELECT * FROM products WHERE barcode IN (${placeholders})`;
+
+    const result = await pool.query(query, barcodes);
+
+    // Return products in the same order as requested barcodes
+    const productsMap = {};
+    result.rows.forEach(product => {
+      productsMap[product.barcode] = product;
+    });
+
+    const orderedProducts = barcodes
+      .map(barcode => productsMap[barcode])
+      .filter(product => product !== undefined);
+
+    res.json(orderedProducts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
 // Debug endpoint: Get sample of unique categories
 app.get('/api/debug/categories', async (req, res) => {
   if (!pool) {

@@ -44,6 +44,15 @@ class _Screen2State extends State<Screen2> {
   // Updated to use actual categories from the database
   final List<String> _categories = ['Snacks', 'Beverages'];
 
+  // ========================================================================
+  // PRIORITY PRODUCT BARCODES - For testing
+  // ========================================================================
+  final List<String> _prioritySnacksBarcodes = [
+    '0000209024937',
+    '0000141013129',
+  ];
+  // ========================================================================
+
   @override
   void initState() {
     super.initState();
@@ -59,6 +68,24 @@ class _Screen2State extends State<Screen2> {
       _categories,
       limit: 20,
     );
+
+    // Fetch priority products for Snacks category
+    if (_prioritySnacksBarcodes.isNotEmpty) {
+      final priorityProducts = await RailwayApiService.getProductsByBarcodes(
+        _prioritySnacksBarcodes,
+      );
+
+      if (priorityProducts.isNotEmpty && products.containsKey('Snacks')) {
+        // Remove priority products from the regular list if they exist
+        final regularSnacks = products['Snacks']!.where((product) {
+          return !_prioritySnacksBarcodes.contains(product.barcode);
+        }).toList();
+
+        // Combine: priority products first, then regular products
+        products['Snacks'] = [...priorityProducts, ...regularSnacks];
+        print('✓ Added ${priorityProducts.length} priority products to Snacks');
+      }
+    }
 
     setState(() {
       _categoryProducts = products;

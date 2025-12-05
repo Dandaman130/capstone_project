@@ -144,5 +144,38 @@ class RailwayApiService {
       return {};
     }
   }
+
+  // Get specific products by their barcodes (maintains order)
+  static Future<List<Product>> getProductsByBarcodes(List<String> barcodes) async {
+    try {
+      if (barcodes.isEmpty) return [];
+
+      final barcodesParam = barcodes.join(',');
+      final url = '$baseUrl/api/products-by-barcodes?barcodes=$barcodesParam';
+
+      print('Fetching products by barcodes: $barcodes');
+
+      final response = await http.get(
+        Uri.parse(url),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Request timeout');
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        final products = data.map((item) => Product.fromJson(item)).toList();
+        print('Found ${products.length} products by barcodes');
+        return products;
+      } else {
+        throw Exception('Failed to load products by barcodes');
+      }
+    } catch (e) {
+      print('Error fetching products by barcodes: $e');
+      return [];
+    }
+  }
 }
 
