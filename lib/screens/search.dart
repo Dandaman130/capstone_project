@@ -1,59 +1,38 @@
 /*
-Current State 12/3/25 Last Modified v(Alpha 2.0)
-Changes Made: Dec 1, 2025
-- Integrated Railway API to fetch products by categories
-- Added category sections for "plant based" and "snacks" below search bar
-- Horizontal scrolling product cards for each category
-- Search bar now searches both cached scanned products and Railway database
-
-Previous Changes (9/29/25):
-Implemented search bar
-- Realtime search that filters products by name or brand
-- Products are stored in ScannedProductCache.all; screen filters list to display
-items that match the search query
--Shows name, brand, quantity, and nutriscore (Can update this if needed)
-- "No products found" if an item is searched and hasn't been scanned
-
-TODO:
--Display image thumbnails for products
--Design improvements
--Refactor screen title to something other than "Screen 2"
- */
+Current State 12/13/25 Last Modified v(Alpha 2.2)
+-Search Screen - Product search and browsing
+-Renamed from Screen2
+*/
 
 import 'package:flutter/material.dart';
 import '../services/scanned_product_cache.dart';
 import '../services/railway_api_service.dart';
 import '../models/scanned_product.dart';
 import '../models/product.dart';
+import '../theme/app_colors.dart';
 import 'product_detail_screen.dart';
 
-class Screen2 extends StatefulWidget {
-  const Screen2({Key? key}) : super(key: key);
+class SearchScreen extends StatefulWidget {
+  const SearchScreen({Key? key}) : super(key: key);
 
   @override
-  State<Screen2> createState() => _Screen2State();
+  State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _Screen2State extends State<Screen2> {
+class _SearchScreenState extends State<SearchScreen> {
   String _searchQuery = '';
   Map<String, List<Product>> _categoryProducts = {};
   bool _isLoading = true;
 
-  // Database search results
   List<Product> _searchResults = [];
   bool _isSearching = false;
 
-  // Updated to use actual categories from the database
   final List<String> _categories = ['Snacks', 'Beverages'];
 
-  // ========================================================================
-  // PRIORITY PRODUCT BARCODES - For testing
-  // ========================================================================
   final List<String> _prioritySnacksBarcodes = [
     '0000209024937',
     '0000141013129',
   ];
-  // ========================================================================
 
   @override
   void initState() {
@@ -71,19 +50,16 @@ class _Screen2State extends State<Screen2> {
       limit: 20,
     );
 
-    // Fetch priority products for Snacks category
     if (_prioritySnacksBarcodes.isNotEmpty) {
       final priorityProducts = await RailwayApiService.getProductsByBarcodes(
         _prioritySnacksBarcodes,
       );
 
       if (priorityProducts.isNotEmpty && products.containsKey('Snacks')) {
-        // Remove priority products from the regular list if they exist
         final regularSnacks = products['Snacks']!.where((product) {
           return !_prioritySnacksBarcodes.contains(product.barcode);
         }).toList();
 
-        // Combine: priority products first, then regular products
         products['Snacks'] = [...priorityProducts, ...regularSnacks];
         print('✓ Added ${priorityProducts.length} priority products to Snacks');
       }
@@ -95,7 +71,6 @@ class _Screen2State extends State<Screen2> {
     });
   }
 
-  // Search Railway database for products
   Future<void> _searchDatabase(String query) async {
     if (query.isEmpty) {
       setState(() {
@@ -112,7 +87,6 @@ class _Screen2State extends State<Screen2> {
     try {
       final results = await RailwayApiService.searchProducts(query);
 
-      // Only update if the search query hasn't changed
       if (query == _searchQuery) {
         setState(() {
           _searchResults = results;
@@ -129,7 +103,6 @@ class _Screen2State extends State<Screen2> {
 
   @override
   Widget build(BuildContext context) {
-    //Filter scanned products by search query
     final List<ScannedProduct> filteredProducts = ScannedProductCache.all
         .where(
           (product) =>
@@ -139,35 +112,55 @@ class _Screen2State extends State<Screen2> {
         .toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Products')),
+      backgroundColor: AppColors.offWhite,
+      appBar: AppBar(
+        title: const Text('Products', style: TextStyle(color: Colors.white)),
+        backgroundColor: AppColors.sageGreen,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: Column(
         children: [
-          //Search bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+          Container(
+            color: AppColors.sageGreen,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'Search products...',
-                prefixIcon: const Icon(Icons.search),
+                hintStyle: TextStyle(color: AppColors.mutedGreen),
+                prefixIcon: Icon(Icons.search, color: AppColors.sageGreen),
                 suffixIcon: _isSearching
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: Padding(
-                          padding: EdgeInsets.all(12.0),
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          padding: const EdgeInsets.all(12.0),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.sageGreen,
+                          ),
                         ),
                       )
                     : null,
+                filled: true,
+                fillColor: Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.lightTan, width: 2),
                 ),
               ),
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
                 });
-                // Search database after user stops typing for 500ms
                 Future.delayed(const Duration(milliseconds: 500), () {
                   if (value == _searchQuery) {
                     _searchDatabase(value);
@@ -177,14 +170,10 @@ class _Screen2State extends State<Screen2> {
             ),
           ),
 
-          // If searching, show search results; otherwise show categories
           Expanded(
             child: Stack(
               children: [
-                // Always show category view in background
                 _buildCategoryView(),
-
-                // Show search overlay when typing
                 if (_searchQuery.isNotEmpty)
                   _buildSearchOverlay(filteredProducts),
               ],
@@ -195,17 +184,15 @@ class _Screen2State extends State<Screen2> {
     );
   }
 
-  // Build search overlay - shows as a card on top of category view
   Widget _buildSearchOverlay(List<ScannedProduct> filteredCachedProducts) {
     final bool hasLocalResults = filteredCachedProducts.isNotEmpty;
     final bool hasDbResults = _searchResults.isNotEmpty;
     final bool noResults = !hasLocalResults && !hasDbResults && !_isSearching;
 
     return Container(
-      color: Colors.black.withValues(alpha: 0.3), // Semi-transparent background
+      color: Colors.black.withValues(alpha: 0.3),
       child: Column(
         children: [
-          // Search results card
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Material(
@@ -213,9 +200,7 @@ class _Screen2State extends State<Screen2> {
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 constraints: BoxConstraints(
-                  maxHeight:
-                      MediaQuery.of(context).size.height *
-                      0.6, // Max 60% of screen height
+                  maxHeight: MediaQuery.of(context).size.height * 0.6,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -238,7 +223,6 @@ class _Screen2State extends State<Screen2> {
                         shrinkWrap: true,
                         padding: const EdgeInsets.all(8),
                         children: [
-                          // Show cached/scanned products first
                           if (hasLocalResults) ...[
                             Padding(
                               padding: const EdgeInsets.symmetric(
@@ -307,7 +291,6 @@ class _Screen2State extends State<Screen2> {
                             ),
                           ],
 
-                          // Show database search results
                           if (hasDbResults) ...[
                             if (hasLocalResults) const Divider(),
                             Padding(
@@ -384,7 +367,6 @@ class _Screen2State extends State<Screen2> {
                             ),
                           ],
 
-                          // Show loading indicator while searching
                           if (_isSearching)
                             const Padding(
                               padding: EdgeInsets.all(16),
@@ -400,7 +382,6 @@ class _Screen2State extends State<Screen2> {
     );
   }
 
-  // Build category view with horizontal scrolling products
   Widget _buildCategoryView() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -410,18 +391,14 @@ class _Screen2State extends State<Screen2> {
       onRefresh: _loadCategoryProducts,
       child: ListView(
         children: [
-          // Show scanned products section if any exist
           if (ScannedProductCache.all.isNotEmpty)
             _buildScannedProductsSection(),
-
-          // Show category sections
           ..._categories.map((category) => _buildCategorySection(category)),
         ],
       ),
     );
   }
 
-  // Build scanned products section
   Widget _buildScannedProductsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,7 +429,6 @@ class _Screen2State extends State<Screen2> {
     );
   }
 
-  // Build a category section with horizontal scrolling
   Widget _buildCategorySection(String category) {
     final products = _categoryProducts[category] ?? [];
 
@@ -470,17 +446,23 @@ class _Screen2State extends State<Screen2> {
             children: [
               Text(
                 _formatCategoryName(category),
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.sageGreen,
+                ),
               ),
               TextButton(
                 onPressed: () {
-                  // TODO: Navigate to full category view
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('View all $category products')),
+                    SnackBar(
+                      content: Text('View all $category products'),
+                      backgroundColor: AppColors.sageGreen,
+                    ),
                   );
                 },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.sageGreen,
+                ),
                 child: const Text('View All'),
               ),
             ],
@@ -502,10 +484,12 @@ class _Screen2State extends State<Screen2> {
     );
   }
 
-  // Build a product card for category products
   Widget _buildProductCard(Product product) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: AppColors.softMint,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -516,18 +500,18 @@ class _Screen2State extends State<Screen2> {
             ),
           );
         },
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           width: 120,
           padding: const EdgeInsets.all(8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Placeholder image
               Container(
                 height: 100,
                 width: 100,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: AppColors.lightTan,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: product.imageUrl != null && product.imageUrl!.isNotEmpty
@@ -540,19 +524,22 @@ class _Screen2State extends State<Screen2> {
                             return Icon(
                               Icons.image,
                               size: 50,
-                              color: Colors.grey[400],
+                              color: AppColors.mutedGreen,
                             );
                           },
                         ),
                       )
-                    : Icon(Icons.image, size: 50, color: Colors.grey[400]),
+                    : Icon(Icons.image, size: 50, color: AppColors.mutedGreen),
               ),
               const SizedBox(height: 8),
-              // Product name
               Expanded(
                 child: Text(
                   product.name,
-                  style: const TextStyle(fontSize: 12),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w500,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
@@ -565,10 +552,12 @@ class _Screen2State extends State<Screen2> {
     );
   }
 
-  // Build a product card for scanned products
   Widget _buildScannedProductCard(ScannedProduct product) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: AppColors.softMint,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -579,26 +568,26 @@ class _Screen2State extends State<Screen2> {
             ),
           );
         },
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           width: 120,
           padding: const EdgeInsets.all(8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Placeholder image with nutri-score badge
               Stack(
                 children: [
                   Container(
                     height: 100,
                     width: 100,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: AppColors.lightTan,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
                       Icons.shopping_bag,
                       size: 50,
-                      color: Colors.grey[400],
+                      color: AppColors.mutedGreen,
                     ),
                   ),
                   if (product.nutriScore.isNotEmpty &&
@@ -628,11 +617,14 @@ class _Screen2State extends State<Screen2> {
                 ],
               ),
               const SizedBox(height: 8),
-              // Product name
               Expanded(
                 child: Text(
                   product.name,
-                  style: const TextStyle(fontSize: 12),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w500,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
@@ -645,7 +637,6 @@ class _Screen2State extends State<Screen2> {
     );
   }
 
-  // Format category name for display
   String _formatCategoryName(String category) {
     return category
         .split(' ')
@@ -653,7 +644,6 @@ class _Screen2State extends State<Screen2> {
         .join(' ');
   }
 
-  // Get nutri-score color
   Color _getNutriScoreColor(String score) {
     switch (score.toUpperCase()) {
       case 'A':
