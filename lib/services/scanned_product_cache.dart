@@ -1,5 +1,5 @@
 /*
-Current State 9/24/25 Last Modified v(beta 1.0)
+Current State 9/24/25 Last Modified v(Alpha 1.0)
 This runs all the cache comoponets for local hotreloading cache system
 
 Things to Consider
@@ -37,5 +37,4 @@ class ScannedProductCache {
       return null;
     }
   }
-
 }

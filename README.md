@@ -1,16 +1,9 @@
 # capstone_project_app
 
-A new Flutter project.
+Utilizing OFF Database to Help users better find products that fit their diet.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+This app consists of a multitude of large components
+1) Scanning barcodes (via camera) and accessing OFF Database to lookup product data | Implemented 9/25
+2) Backend database consisting of all products cleaned to just 5 fields for a search tab | Implemented 12/25

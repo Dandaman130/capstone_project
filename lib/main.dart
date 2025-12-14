@@ -1,30 +1,27 @@
 /*
-Current State 9/24/25 Last Modified v(beta 1.0)
-Consists of the app startup and bottom nav bar
-
-Things to Conisder
-updating bottom nav bar with newer flutter package
-reformatting the code
+Current State 12/13/25 Last Modified v(Alpha 2.2)
+-Consists of the app startup and bottom nav bar
+-Refactored screen naming for clarity
+-Added floating action buttons for Favorites and Account
+-Bottom nav now has 3 items: Search, Scan, Community
 */
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'screens/screen1.dart';
-import 'screens/screen2.dart';
-import 'screens/screen3.dart';
-import 'screens/screen4.dart';
+import 'screens/scan.dart'; // ScanScreen
+import 'screens/search.dart'; // SearchScreen
+import 'screens/community_screen.dart';
 import 'services/local_product_loader.dart';
-
+import 'theme/app_colors.dart';
+import 'package:flutter_snake_navigationbar/flutter_snake_navigationbar.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); //Required for asset loading
-  await LocalProductLoader.load();           //Loading  sample_products.json
+  WidgetsFlutterBinding.ensureInitialized(); // Required for asset loading
+  await LocalProductLoader.load(); // Loading sample_products.json
   runApp(const ProviderScope(child: MyApp()));
 }
 
-//void main() => runApp(const ProviderScope(child: MyApp())); //The OG startup func
-
-
+// void main() => runApp(const ProviderScope(child: MyApp())); // The OG startup func
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -34,7 +31,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Bottom Nav Demo',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primaryColor: AppColors.sageGreen,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.sageGreen,
+          primary: AppColors.sageGreen,
+        ),
       ),
       home: const MainPage(),
     );
@@ -51,11 +52,10 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    Screen1(),
-    Screen2(),
-    Screen3(),
-    Screen4(),
+  final List<Widget> _pages = [
+    const SearchScreen(),
+    const ScanScreen(),
+    const CommunityScreen(),
   ];
 
   void _onTabTapped(int index) {
@@ -64,35 +64,68 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  //This is the bottom nav bar that will need to be replaced
-  //At some point, it is only temp so don't forget to
-  //REFACTOR CODE W/THIS IN MIND!!!!
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.offWhite,
       body: _pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.qr_code_scanner),
-            label: 'Scan',
+
+      // Centered floating Snake Navigation Bar
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 1.5, vertical: 16.0),
+        child: SizedBox(
+          height: 90,
+          child: SnakeNavigationBar.color(
+            behaviour: SnakeBarBehaviour.floating,
+            snakeShape: SnakeShape.circle,
+
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(24)),
+            ),
+
+            padding: EdgeInsets.zero,
+
+            height: 64,
+
+            backgroundColor: AppColors.sageGreen,
+            snakeViewColor: AppColors.mutedGreen,
+            selectedItemColor: AppColors.softMint,
+            unselectedItemColor: AppColors.lightTan,
+
+            shadowColor: Colors.black.withValues(alpha: 0.18),
+            elevation: 8,
+
+            showSelectedLabels: false,
+            showUnselectedLabels: false,
+
+            currentIndex: _currentIndex,
+            onTap: _onTabTapped,
+
+            items: [
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: const EdgeInsets.only(left: 0),
+                  child: Icon(Icons.search, size: 38),
+                ),
+                label: '',
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: const EdgeInsets.only(left: 3),
+                  child: Icon(Icons.qr_code_scanner, size: 38),
+                ),
+                label: '',
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: const EdgeInsets.only(left: 3),
+                  child: Icon(Icons.people, size: 38),
+                ),
+                label: '',
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.store),
-            label: 'Products',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: 'Favorites',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Account',
-          ),
-        ],
-        type: BottomNavigationBarType.fixed,
+        ),
       ),
     );
   }
