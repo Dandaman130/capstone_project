@@ -112,12 +112,12 @@ class _SearchScreenState extends State<SearchScreen> {
         .toList();
 
     return Scaffold(
-      backgroundColor: AppColors.offWhite,
+      backgroundColor: AppColors.sageGreen,
       appBar: AppBar(
-        title: const Text('Products', style: TextStyle(color: Colors.white)),
+        title: const Text('Products', style: TextStyle(color: AppColors.offWhite)),
         backgroundColor: AppColors.sageGreen,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: AppColors.offWhite),
       ),
       body: Column(
         children: [
@@ -143,7 +143,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       )
                     : null,
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: AppColors.offWhite,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -203,7 +203,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   maxHeight: MediaQuery.of(context).size.height * 0.6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.offWhite,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: noResults
@@ -234,7 +234,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.grey[700],
+                                  color: AppColors.offWhite,
                                 ),
                               ),
                             ),
@@ -409,11 +409,14 @@ class _SearchScreenState extends State<SearchScreen> {
             'Recently Scanned',
             style: Theme.of(
               context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.offWhite,
+            ),
           ),
         ),
         SizedBox(
-          height: 180,
+          height: 150,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -448,7 +451,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 _formatCategoryName(category),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.sageGreen,
+                  color: AppColors.offWhite,
                 ),
               ),
               TextButton(
@@ -461,7 +464,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   );
                 },
                 style: TextButton.styleFrom(
-                  foregroundColor: AppColors.sageGreen,
+                  foregroundColor: AppColors.offWhite,
                 ),
                 child: const Text('View All'),
               ),
@@ -469,7 +472,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ),
         SizedBox(
-          height: 180,
+          height: 150,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -487,9 +490,9 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildProductCard(Product product) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 4),
-      color: AppColors.softMint,
+      color: AppColors.mutedGreen,
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -500,18 +503,19 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           );
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(4),
         child: Container(
           width: 120,
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 height: 100,
                 width: 100,
                 decoration: BoxDecoration(
-                  color: AppColors.lightTan,
+                  color: AppColors.softMint,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: product.imageUrl != null && product.imageUrl!.isNotEmpty
@@ -529,21 +533,19 @@ class _SearchScreenState extends State<SearchScreen> {
                           },
                         ),
                       )
-                    : Icon(Icons.image, size: 50, color: AppColors.mutedGreen),
+                    : Icon(Icons.image, size: 50, color: AppColors.sageGreen),
               ),
               const SizedBox(height: 8),
-              Expanded(
-                child: Text(
-                  product.name,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
+              Text(
+                product.name,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
             ],
           ),
@@ -555,7 +557,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildScannedProductCard(ScannedProduct product) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 4),
-      color: AppColors.softMint,
+      color: AppColors.mutedGreen,
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
@@ -571,9 +573,10 @@ class _SearchScreenState extends State<SearchScreen> {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           width: 120,
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Stack(
                 children: [
@@ -581,13 +584,13 @@ class _SearchScreenState extends State<SearchScreen> {
                     height: 100,
                     width: 100,
                     decoration: BoxDecoration(
-                      color: AppColors.lightTan,
+                      color: AppColors.softMint,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
                       Icons.shopping_bag,
                       size: 50,
-                      color: AppColors.mutedGreen,
+                      color: AppColors.sageGreen,
                     ),
                   ),
                   if (product.nutriScore.isNotEmpty &&
@@ -617,18 +620,16 @@ class _SearchScreenState extends State<SearchScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              Expanded(
-                child: Text(
-                  product.name,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
+              Text(
+                product.name,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
             ],
           ),

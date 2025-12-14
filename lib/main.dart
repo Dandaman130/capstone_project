@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Bottom Nav Demo',
       theme: ThemeData(
-        primaryColor: AppColors.sageGreen,
+        primaryColor: AppColors.lightTan,
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.sageGreen,
           primary: AppColors.sageGreen,
@@ -67,7 +67,7 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.offWhite,
+      backgroundColor: AppColors.sageGreen,
       body: _pages[_currentIndex],
 
       // Centered floating Snake Navigation Bar
@@ -80,17 +80,17 @@ class _MainPageState extends State<MainPage> {
             snakeShape: SnakeShape.circle,
 
             shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(24)),
+              borderRadius: BorderRadius.all(Radius.circular(18)),
             ),
 
             padding: EdgeInsets.zero,
 
             height: 64,
 
-            backgroundColor: AppColors.sageGreen,
+            backgroundColor: AppColors.lightTan,
             snakeViewColor: AppColors.mutedGreen,
             selectedItemColor: AppColors.softMint,
-            unselectedItemColor: AppColors.lightTan,
+            unselectedItemColor: AppColors.sageGreen,
 
             shadowColor: Colors.black.withValues(alpha: 0.18),
             elevation: 8,
