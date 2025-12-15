@@ -1,12 +1,14 @@
 /*
-Current State 12/13/25 Last Modified v(Alpha 2.2)
+Current State 12/15/25 Last Modified v(Alpha 2.3)
 -Search Screen - Product search and browsing
 -Renamed from Screen2
+-Added rate limiting (10 batch searches per minute)
 */
 
 import 'package:flutter/material.dart';
 import '../services/scanned_product_cache.dart';
 import '../services/railway_api_service.dart';
+import '../services/rate_limiter_service.dart';
 import '../models/scanned_product.dart';
 import '../models/product.dart';
 import '../theme/app_colors.dart';
@@ -41,9 +43,29 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _loadCategoryProducts() async {
+    // Check rate limit before making batch API call
+    if (!RateLimiterService.canMakeCall(RateLimitType.batchSearch)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Rate limit exceeded. Please wait before loading more products.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
+
+    // Record the API call for rate limiting
+    RateLimiterService.recordCall(RateLimitType.batchSearch);
 
     final products = await RailwayApiService.getProductsByCategories(
       _categories,
@@ -111,6 +133,8 @@ class _SearchScreenState extends State<SearchScreen> {
         )
         .toList();
 
+    final remainingBatchSearches = RateLimiterService.getRemainingCalls(RateLimitType.batchSearch);
+
     return Scaffold(
       backgroundColor: AppColors.sageGreen,
       appBar: AppBar(
@@ -118,6 +142,28 @@ class _SearchScreenState extends State<SearchScreen> {
         backgroundColor: AppColors.sageGreen,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.offWhite),
+        actions: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: remainingBatchSearches <= 2 ? Colors.red.shade700 : Colors.white24,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  '$remainingBatchSearches/10',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [

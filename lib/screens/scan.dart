@@ -1,7 +1,8 @@
 /*
-Current State 12/13/25 Last Modified v(Alpha 2.2)
+Current State 12/15/25 Last Modified v(Alpha 2.3)
 -Scan Screen - Barcode scanning functionality
 -Renamed from Screen1
+-Added rate limiting (15 scans per minute)
 */
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../providers/product_provider.dart';
 import '../models/scanned_product.dart';
 import '../services/scanned_product_cache.dart';
+import '../services/rate_limiter_service.dart';
 import '../theme/app_colors.dart';
 
 class ScanScreen extends ConsumerStatefulWidget {
@@ -34,6 +36,23 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       for (final barcode in barcodeCapture.barcodes) {
         final String? code = barcode.rawValue;
         if (code != null) {
+          // Check rate limit before processing barcode
+          if (!RateLimiterService.canMakeCall(RateLimitType.barcodeScan)) {
+            debugPrint('⚠️ Rate limit exceeded for barcode scanning');
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Rate limit exceeded. Please wait before scanning again.'),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 3),
+              ),
+            );
+            setState(() {
+              _hasScanned = true;
+              _controller.stop();
+            });
+            return;
+          }
+
           debugPrint('Barcode found: $code');
           setState(() {
             _barcode = code;
@@ -55,12 +74,16 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         debugPrint('Retrieved from cache: ${cachedProduct.name} (${cachedProduct.barcode})');
       } else {
         debugPrint('Fetching from API: $_barcode');
+        // Record the API call for rate limiting
+        RateLimiterService.recordCall(RateLimitType.barcodeScan);
       }
     }
 
     final productAsync = (_barcode != null && cachedProduct == null)
         ? ref.watch(productProvider(_barcode!))
         : null;
+
+    final remainingScans = RateLimiterService.getRemainingCalls(RateLimitType.barcodeScan);
 
     return Scaffold(
       backgroundColor: AppColors.offWhite,
@@ -69,6 +92,28 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         backgroundColor: AppColors.sageGreen,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: remainingScans <= 3 ? Colors.red.shade700 : Colors.white24,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  '$remainingScans/15',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
