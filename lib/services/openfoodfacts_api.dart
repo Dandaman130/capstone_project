@@ -22,7 +22,7 @@ class OpenFoodFactsApi {
       so that OFF.com knows who/version we are. 
       thank you :)
       */
-      'User-Agent': 'Unnamed Capstone Project Arcadia University v(Alpha 2.0) - Dart/Flutter - dandun914@gmail.com'
+      'User-Agent': 'Unnamed Capstone Project Arcadia University v(Alpha 2.2) - Dart/Flutter - dandun914@gmail.com'
     });
 
     if (response.statusCode == 200) {
