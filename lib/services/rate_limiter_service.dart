@@ -3,8 +3,8 @@ Rate Limiter Service
 Current State 12/15/25 Last Modified v(Alpha 2.3.1)
 
 Implements rate limiting for API calls:
-- Barcode scanning: 15 calls per minute
-- Batch search: 10 calls per minute
+- Barcode scanning: 30 calls per minute
+- Batch search: 15 calls per minute
 
 TODO: When account system is implemented, replace getUserId()
       to return the actual user ID instead of "guest"
@@ -19,8 +19,8 @@ enum RateLimitType {
 
 class RateLimiterService {
   // Rate limit configurations
-  static const int _barcodeScanLimit = 15; // calls per minute
-  static const int _batchSearchLimit = 10; // calls per minute
+  static const int _barcodeScanLimit = 30; // calls per minute
+  static const int _batchSearchLimit = 15; // calls per minute
 
   // Storage for tracking API calls per user
   // Key format: "userId_limitType"
@@ -54,14 +54,14 @@ class RateLimiterService {
 
     if (kDebugMode) {
       print('═══════════════════════════════════════');
-      print('📊 RATE LIMIT CHECK');
+      print('RATE LIMIT CHECK');
       print('───────────────────────────────────────');
       print('User ID: $userId');
       print('Type: ${_getLimitTypeName(limitType)}');
       print('Limit: $limit calls/minute');
       print('Calls in last minute: ${history.length}');
       print('Remaining calls: $remainingCalls');
-      print('Status: ${canCall ? '✅ ALLOWED' : '❌ RATE LIMIT EXCEEDED'}');
+      print('Status: ${canCall ? 'ALLOWED' : 'RATE LIMIT EXCEEDED'}');
       print('═══════════════════════════════════════');
     }
 
@@ -87,7 +87,7 @@ class RateLimiterService {
 
     if (kDebugMode) {
       print('═══════════════════════════════════════');
-      print('✅ API CALL RECORDED');
+      print('API CALL RECORDED');
       print('───────────────────────────────────────');
       print('User ID: $userId');
       print('Type: ${_getLimitTypeName(limitType)}');
@@ -139,13 +139,13 @@ class RateLimiterService {
       final prefix = '${userId}_';
       _callHistory.removeWhere((key, _) => key.startsWith(prefix));
       if (kDebugMode) {
-        print('🔄 Rate limits reset for user: $userId');
+        print('Rate limits reset for user: $userId');
       }
     } else {
       // Remove all history
       _callHistory.clear();
       if (kDebugMode) {
-        print('🔄 All rate limits reset');
+        print('All rate limits reset');
       }
     }
   }

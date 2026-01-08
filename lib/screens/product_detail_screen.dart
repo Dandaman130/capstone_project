@@ -30,6 +30,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> _loadProductDetails() async {
+    if (!mounted) return;
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -44,12 +46,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       } else if (widget.scannedProduct != null) {
         barcode = widget.scannedProduct!.barcode;
         // If we already have scanned product, just display it
+        if (!mounted) return;
         setState(() {
           _productDetails = widget.scannedProduct;
           _isLoading = false;
         });
         return;
       } else {
+        if (!mounted) return;
         setState(() {
           _errorMessage = 'No product information available';
           _isLoading = false;
@@ -69,12 +73,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       // Cache it (same as Screen1 does)
       ScannedProductCache.addProduct(scannedProduct);
 
+      if (!mounted) return;
       setState(() {
         _productDetails = scannedProduct;
         _isLoading = false;
       });
     } catch (e) {
       print('Error loading product: $e');
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Product not found in OpenFoodFacts database';
         _isLoading = false;
