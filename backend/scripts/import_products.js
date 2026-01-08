@@ -26,7 +26,7 @@ async function importProducts() {
         image_url TEXT
       );
     `);
-    console.log('✅ Table created');
+    console.log('Table created');
 
     // 2. Read and import products
     console.log('Reading JSONL file...');
@@ -72,10 +72,10 @@ async function importProducts() {
       }
     }
 
-    console.log(`\n✅ Import complete! Imported ${imported} products.`);
+    console.log(`\nImport complete! Imported ${imported} products.`);
     
   } catch (err) {
-    console.error('❌ Error:', err.message);
+    console.error('Error:', err.message);
   } finally {
     await pool.end();
   }

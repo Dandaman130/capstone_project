@@ -81,7 +81,7 @@ async function run() {
     );
   } */
 
-  console.log('✅ Search complete');
+  console.log('Search complete');
   // await pool.end();
 }
 

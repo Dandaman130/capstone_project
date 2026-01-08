@@ -29,7 +29,7 @@ if (process.env.DATABASE_URL) {
     console.error('✗ Database pool creation failed:', err);
   }
 } else {
-  console.warn('⚠ WARNING: DATABASE_URL not set');
+  console.warn('WARNING: DATABASE_URL not set');
 }
 
 // Middleware
