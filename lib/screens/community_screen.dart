@@ -15,16 +15,27 @@ class CommunityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.offWhite,
+      backgroundColor: AppColors.sageGreen,
       appBar: AppBar(
-        title: const Text('Community', style: TextStyle(color: Colors.white)),
+        title: const Text('Community', style: TextStyle(color: AppColors.offWhite)),
         backgroundColor: AppColors.sageGreen,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: AppColors.offWhite),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
+      body: Container(
+        // Background with sage green color and vine pattern image overlay
+        decoration: BoxDecoration(
+          color: AppColors.sageGreen,
+          image: DecorationImage(
+            image: AssetImage('lib/theme/vinebg.png'),
+            fit: BoxFit.none,
+            scale: 1.8,
+            opacity: 1.0, // Adjust opacity for subtle background effect
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
           children: [
             const SizedBox(height: 20),
             // Row with two square buttons on either side
@@ -94,9 +105,10 @@ class CommunityScreen extends StatelessWidget {
             const SizedBox(height: 40),
             const Text(
               'Community features coming soon',
-              style: TextStyle(fontSize: 16, color: Colors.black87),
+              style: TextStyle(fontSize: 16, color: AppColors.offWhite),
             ),
           ],
+        ),
         ),
       ),
     );
