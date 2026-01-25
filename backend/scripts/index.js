@@ -6,10 +6,11 @@ const { Pool } = require('pg');
 const app = express();
 const port = process.env.PORT || 3000;
 
-console.log('=== Server Initialization v2.4.0 ===');
+console.log('=== Server Initialization v2.4.0 - DEPLOYMENT ID: 2026-01-25-FIX ===');
 console.log('PORT:', port);
 console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
 console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
+console.log('SCHEMA: Normalized with categories JOIN');
 
 // Connect to Railway Postgres
 let pool = null;
