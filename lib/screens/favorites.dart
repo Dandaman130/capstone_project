@@ -13,17 +13,29 @@ class FavoritesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.offWhite,
+      backgroundColor: AppColors.sageGreen,
       appBar: AppBar(
-        title: const Text('Favorites', style: TextStyle(color: Colors.white)),
+        title: const Text('Favorites', style: TextStyle(color: AppColors.offWhite)),
         backgroundColor: AppColors.sageGreen,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: AppColors.offWhite),
       ),
-      body: const Center(
-        child: Text(
-          'Saved Things & flags go here',
-          style: TextStyle(fontSize: 16, color: Colors.black87),
+      body: Container(
+        // Background with sage green color and vine pattern image overlay
+        decoration: BoxDecoration(
+          color: AppColors.sageGreen,
+          image: DecorationImage(
+            image: AssetImage('lib/theme/vinebg.png'),
+            fit: BoxFit.none,
+            scale: 1.8,
+            opacity: 1.0, // Adjust opacity for subtle background effect
+          ),
+        ),
+        child: const Center(
+          child: Text(
+            'Saved Things & flags go here',
+            style: TextStyle(fontSize: 16, color: AppColors.offWhite),
+          ),
         ),
       ),
     );

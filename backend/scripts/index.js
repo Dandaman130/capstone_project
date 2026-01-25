@@ -72,13 +72,31 @@ app.get('/', (req, res) => {
   });
 });
 
-// Get all products
+// Get all products with their categories
 app.get('/api/products', async (req, res) => {
   if (!pool) {
     return res.status(503).json({ error: 'Database not configured' });
   }
   try {
-    const result = await pool.query('SELECT * FROM products LIMIT 100');
+    const limit = req.query.limit || 100;
+    // Get products with their categories joined
+    const result = await pool.query(`
+      SELECT
+        p.barcode,
+        p.name,
+        p.brand,
+        p.image_url,
+        p.is_vegan,
+        p.is_vegetarian,
+        p.is_gluten_free,
+        p.is_dairy_free,
+        STRING_AGG(DISTINCT c.name, ',') as categories
+      FROM products p
+      LEFT JOIN product_categories pc ON p.barcode = pc.product_barcode
+      LEFT JOIN categories c ON pc.category_id = c.id
+      GROUP BY p.barcode, p.name, p.brand, p.image_url, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
+      LIMIT $1
+    `, [limit]);
     res.json(result.rows);
   } catch (err) {
     console.error(err);
@@ -86,15 +104,31 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-// Get product by barcode
+// Get product by barcode with categories
 app.get('/api/products/:barcode', async (req, res) => {
   if (!pool) {
     return res.status(503).json({ error: 'Database not configured' });
   }
   try {
     const { barcode } = req.params;
-    const result = await pool.query('SELECT * FROM products WHERE barcode = $1', [barcode]);
-    
+    const result = await pool.query(`
+      SELECT
+        p.barcode,
+        p.name,
+        p.brand,
+        p.image_url,
+        p.is_vegan,
+        p.is_vegetarian,
+        p.is_gluten_free,
+        p.is_dairy_free,
+        STRING_AGG(DISTINCT c.name, ',') as categories
+      FROM products p
+      LEFT JOIN product_categories pc ON p.barcode = pc.product_barcode
+      LEFT JOIN categories c ON pc.category_id = c.id
+      WHERE p.barcode = $1
+      GROUP BY p.barcode, p.name, p.brand, p.image_url, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
+    `, [barcode]);
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Product not found' });
     }
@@ -106,17 +140,31 @@ app.get('/api/products/:barcode', async (req, res) => {
   }
 });
 
-// Search products by name
+// Search products by name with categories
 app.get('/api/search', async (req, res) => {
   if (!pool) {
     return res.status(503).json({ error: 'Database not configured' });
   }
   try {
     const { q } = req.query;
-    const result = await pool.query(
-      'SELECT * FROM products WHERE name ILIKE $1 LIMIT 20',
-      [`%${q}%`]
-    );
+    const result = await pool.query(`
+      SELECT
+        p.barcode,
+        p.name,
+        p.brand,
+        p.image_url,
+        p.is_vegan,
+        p.is_vegetarian,
+        p.is_gluten_free,
+        p.is_dairy_free,
+        STRING_AGG(DISTINCT c.name, ',') as categories
+      FROM products p
+      LEFT JOIN product_categories pc ON p.barcode = pc.product_barcode
+      LEFT JOIN categories c ON pc.category_id = c.id
+      WHERE p.name ILIKE $1
+      GROUP BY p.barcode, p.name, p.brand, p.image_url, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
+      LIMIT 20
+    `, [`%${q}%`]);
     res.json(result.rows);
   } catch (err) {
     console.error(err);
@@ -124,7 +172,7 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
-// Get products by category
+// Get products by category (now using normalized category table)
 app.get('/api/categories/:category', async (req, res) => {
   if (!pool) {
     return res.status(503).json({ error: 'Database not configured' });
@@ -133,18 +181,42 @@ app.get('/api/categories/:category', async (req, res) => {
     const { category } = req.params;
     const limit = req.query.limit || 20;
 
-    const result = await pool.query(
-      'SELECT * FROM products WHERE categories ILIKE $1 LIMIT $2',
-      [`%${category}%`, limit]
-    );
+    console.log(`Fetching products for category: ${category}`);
+
+    // Query products that have this category (match by category name pattern)
+    const result = await pool.query(`
+      SELECT
+        p.barcode,
+        p.name,
+        p.brand,
+        p.image_url,
+        p.is_vegan,
+        p.is_vegetarian,
+        p.is_gluten_free,
+        p.is_dairy_free,
+        STRING_AGG(DISTINCT c.name, ',') as categories
+      FROM products p
+      JOIN product_categories pc ON p.barcode = pc.product_barcode
+      JOIN categories c ON pc.category_id = c.id
+      WHERE EXISTS (
+        SELECT 1 FROM product_categories pc2
+        JOIN categories c2 ON pc2.category_id = c2.id
+        WHERE pc2.product_barcode = p.barcode
+        AND c2.name ILIKE $1
+      )
+      GROUP BY p.barcode, p.name, p.brand, p.image_url, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
+      LIMIT $2
+    `, [`%${category}%`, limit]);
+
+    console.log(`Found ${result.rows.length} products for category: ${category}`);
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error('Error in /api/categories/:category:', err);
     res.status(500).json({ error: 'Database error' });
   }
 });
 
-// Get products from multiple categories
+// Get products from multiple categories (batch request)
 app.get('/api/categories-batch', async (req, res) => {
   if (!pool) {
     return res.status(503).json({ error: 'Database not configured' });
@@ -153,28 +225,53 @@ app.get('/api/categories-batch', async (req, res) => {
     const categories = req.query.categories?.split(',') || [];
     const limit = req.query.limit || 20;
 
+    console.log(`Batch request for categories: ${categories.join(', ')}`);
+
     if (categories.length === 0) {
       return res.json({});
     }
 
     const results = {};
 
+    // Fetch products for each category
     for (const category of categories) {
-      const result = await pool.query(
-        'SELECT * FROM products WHERE categories ILIKE $1 LIMIT $2',
-        [`%${category}%`, limit]
-      );
+      const result = await pool.query(`
+        SELECT
+          p.barcode,
+          p.name,
+          p.brand,
+          p.image_url,
+          p.is_vegan,
+          p.is_vegetarian,
+          p.is_gluten_free,
+          p.is_dairy_free,
+          STRING_AGG(DISTINCT c.name, ',') as categories
+        FROM products p
+        JOIN product_categories pc ON p.barcode = pc.product_barcode
+        JOIN categories c ON pc.category_id = c.id
+        WHERE EXISTS (
+          SELECT 1 FROM product_categories pc2
+          JOIN categories c2 ON pc2.category_id = c2.id
+          WHERE pc2.product_barcode = p.barcode
+          AND c2.name ILIKE $1
+        )
+        GROUP BY p.barcode, p.name, p.brand, p.image_url, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
+        LIMIT $2
+      `, [`%${category}%`, limit]);
+
       results[category] = result.rows;
+      console.log(`  ${category}: ${result.rows.length} products`);
     }
 
+    console.log(`Batch request complete, returning ${Object.keys(results).length} categories`);
     res.json(results);
   } catch (err) {
-    console.error(err);
+    console.error('Error in /api/categories-batch:', err);
     res.status(500).json({ error: 'Database error' });
   }
 });
 
-// Get specific products by barcodes (for prioritized display)
+// Get specific products by barcodes (for prioritized display) with categories
 app.get('/api/products-by-barcodes', async (req, res) => {
   if (!pool) {
     return res.status(503).json({ error: 'Database not configured' });
@@ -186,9 +283,27 @@ app.get('/api/products-by-barcodes', async (req, res) => {
       return res.json([]);
     }
 
+    console.log(`Fetching ${barcodes.length} products by barcodes`);
+
     // Create placeholders for parameterized query
     const placeholders = barcodes.map((_, i) => `$${i + 1}`).join(',');
-    const query = `SELECT * FROM products WHERE barcode IN (${placeholders})`;
+    const query = `
+      SELECT
+        p.barcode,
+        p.name,
+        p.brand,
+        p.image_url,
+        p.is_vegan,
+        p.is_vegetarian,
+        p.is_gluten_free,
+        p.is_dairy_free,
+        STRING_AGG(DISTINCT c.name, ',') as categories
+      FROM products p
+      LEFT JOIN product_categories pc ON p.barcode = pc.product_barcode
+      LEFT JOIN categories c ON pc.category_id = c.id
+      WHERE p.barcode IN (${placeholders})
+      GROUP BY p.barcode, p.name, p.brand, p.image_url, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
+    `;
 
     const result = await pool.query(query, barcodes);
 
@@ -202,25 +317,26 @@ app.get('/api/products-by-barcodes', async (req, res) => {
       .map(barcode => productsMap[barcode])
       .filter(product => product !== undefined);
 
+    console.log(`Found ${orderedProducts.length} products by barcodes`);
     res.json(orderedProducts);
   } catch (err) {
-    console.error(err);
+    console.error('Error in /api/products-by-barcodes:', err);
     res.status(500).json({ error: 'Database error' });
   }
 });
 
-// Debug endpoint: Get sample of unique categories
+// Debug endpoint: Get sample of categories from new schema
 app.get('/api/debug/categories', async (req, res) => {
   if (!pool) {
     return res.status(503).json({ error: 'Database not configured' });
   }
   try {
     const result = await pool.query(
-      'SELECT DISTINCT categories FROM products WHERE categories IS NOT NULL LIMIT 50'
+      'SELECT id, name, parent_id, level FROM categories ORDER BY name LIMIT 50'
     );
     res.json({
       count: result.rows.length,
-      samples: result.rows.map(row => row.categories)
+      samples: result.rows
     });
   } catch (err) {
     console.error(err);
@@ -235,10 +351,24 @@ app.get('/api/debug/stats', async (req, res) => {
   }
   try {
     const countResult = await pool.query('SELECT COUNT(*) FROM products');
-    const sampleResult = await pool.query('SELECT * FROM products LIMIT 5');
+    const categoryCountResult = await pool.query('SELECT COUNT(*) FROM categories');
+    const sampleResult = await pool.query(`
+      SELECT
+        p.barcode,
+        p.name,
+        p.brand,
+        p.image_url,
+        STRING_AGG(DISTINCT c.name, ',') as categories
+      FROM products p
+      LEFT JOIN product_categories pc ON p.barcode = pc.product_barcode
+      LEFT JOIN categories c ON pc.category_id = c.id
+      GROUP BY p.barcode, p.name, p.brand, p.image_url
+      LIMIT 5
+    `);
 
     res.json({
       totalProducts: countResult.rows[0].count,
+      totalCategories: categoryCountResult.rows[0].count,
       sampleProducts: sampleResult.rows
     });
   } catch (err) {
