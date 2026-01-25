@@ -1,10 +1,12 @@
+// Railway API Server v2.4.0 - Normalized Database Schema
+// Updated: January 25, 2026
 const express = require('express');
 const { Pool } = require('pg');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-console.log('=== Server Initialization ===');
+console.log('=== Server Initialization v2.4.0 ===');
 console.log('PORT:', port);
 console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
 console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
