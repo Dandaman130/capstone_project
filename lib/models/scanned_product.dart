@@ -15,6 +15,7 @@ class ScannedProduct {
   final String quantity;
   final String nutriScore;
   final String ingredients;
+  final String? imageUrl; // Add image URL field
 
   ScannedProduct({
     required this.barcode,
@@ -23,6 +24,7 @@ class ScannedProduct {
     required this.quantity,
     required this.nutriScore,
     required this.ingredients,
+    this.imageUrl, // Optional image URL
   });
 
   factory ScannedProduct.fromJson(String barcode, Map<String, dynamic> json) {
@@ -33,6 +35,7 @@ class ScannedProduct {
       quantity: json['quantity'] ?? 'Unknown',
       nutriScore: (json['nutriscore_grade'] ?? 'N/A').toUpperCase(),
       ingredients: json['ingredients_text'] ?? 'Ingredients not listed',
+      imageUrl: json['image_url'] ?? json['image_front_url'] ?? json['image_front_small_url'],
     );
   }
 }

@@ -1,0 +1,9 @@
+This File will cntain color scheme related assets.
+// For example, you can define color palettes, gradients, and themes here.
+
+color Pallate
+    #CBDED3 // Soft Mint
+    #8BA49A // Muted Green
+    #D2C49E // Light Tan
+    #3B6255 // Sage Green
+    #E2DFDA // Off-White

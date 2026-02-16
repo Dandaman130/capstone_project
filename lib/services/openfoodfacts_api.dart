@@ -1,5 +1,5 @@
 /*
-Current State 9/24/25 Last Modified v(beta 1.0)
+Current State 9/24/25 Last Modified v(Alpha 1.0)
 This is the actual call to API and feching requests
 aswell as version Control
 
@@ -16,9 +16,13 @@ class OpenFoodFactsApi {
   Future<Map<String, dynamic>> fetchProduct(String barcode) async {
     final url = Uri.parse('$baseUrl/$barcode.json');
 
-    //UPADTE THIS when iterating versions so OFF.com knows who/version we are.
     final response = await http.get(url, headers: {
-      'User-Agent': 'Unnamed Capstone Project v(beta 1.0) - Dart/Flutter - dandun914@gmail.com'
+      /*
+      UPADTE THIS WHEN ITERATING VERSIONS  
+      so that OFF.com knows who/version we are. 
+      thank you :)
+      */
+      'User-Agent': 'Unnamed Capstone Project Arcadia University v(Alpha 2.2) - Dart/Flutter - dandun914@gmail.com'
     });
 
     if (response.statusCode == 200) {
