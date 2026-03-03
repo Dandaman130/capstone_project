@@ -9,7 +9,7 @@ Update 02/15/26
 */
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart'; 
+import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart'; // New Import
 import '../theme/app_colors.dart';
 import 'favorites.dart';
@@ -59,11 +59,11 @@ class CommunityScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildNavButton(context, Icons.favorite, const FavoritesScreen()),
-                  _buildNavButton(context, Icons.person, const AccountScreen()),
+                  _buildNavButton(context, Icons.person, AccountScreen()),
                 ],
               ),
               const SizedBox(height: 40),
-              
+
               // Article Cards
               _buildArticleCard(
                 title: "Healthy Eating",
