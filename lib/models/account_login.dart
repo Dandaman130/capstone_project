@@ -5,19 +5,19 @@ Matches the schema: userId, email, password
 
 class AccountLogin {
   final int userId;
-  final String email;
+  final String username;
   final String password;
 
   AccountLogin({
     required this.userId,
-    required this.email,
+    required this.username,
     required this.password,
   });
 
   factory AccountLogin.fromJson(Map<String, dynamic> json) {
     return AccountLogin(
       userId: json['userId'] as int,
-      email: json['email'] ?? '',
+      username: json['username'] ?? '',
       password: json['password'] ?? '',
     );
   }
@@ -25,7 +25,7 @@ class AccountLogin {
   Map<String, dynamic> toJson() {
     return {
       'userId': userId,
-      'email': email,
+      'username': username,
       'password': password,
     };
   }

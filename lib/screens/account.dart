@@ -37,10 +37,10 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _login() {
-    final email = _usernameController.text.trim();
+    final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
-    final account = AccountRepository.login(email, password);
+    final account = AccountRepository.login(username, password);
 
     if (account != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -59,7 +59,7 @@ class _LoginPageState extends State<LoginPage> {
 
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Invalid email or password")),
+        const SnackBar(content: Text("Invalid username or password")),
       );
     }
   }
@@ -105,7 +105,7 @@ class _LoginPageState extends State<LoginPage> {
               TextField(
                 controller: _usernameController,
                 decoration: const InputDecoration(
-                  labelText: 'Email',
+                  labelText: 'username',
                   border: OutlineInputBorder(),
                 ),
               ),

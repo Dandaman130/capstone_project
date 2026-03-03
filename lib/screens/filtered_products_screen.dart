@@ -1,33 +1,29 @@
 /*
-  AccountHomePage
-  Post-login home screen. Shows a personalised greeting, dietary filter chips,
-  a search bar, and the user's filtered ingredient/product list pulled from
-  the Railway database.
-
-  Replaces the "Coming Soon" placeholder body.
+  FilteredProductsScreen
+  Account home screen: displays Railway DB products filtered by the user's
+  dietary restrictions and personal preferences. Tapping the filter icon
+  opens PreferencesScreen.
 */
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/account_login.dart';
-import '../models/account_gate.dart';
-import '../models/session_manager.dart';
 import '../models/product.dart';
 import '../providers/preferences_provider.dart';
 import '../screens/preferences_screen.dart';
+import '../services/dietary_filter_service.dart';
 import '../services/user_preferences_service.dart';
 import '../theme/app_colors.dart';
 
-class AccountHomePage extends ConsumerStatefulWidget {
-  final AccountLogin user;
-
-  const AccountHomePage({Key? key, required this.user}) : super(key: key);
+class FilteredProductsScreen extends ConsumerStatefulWidget {
+  const FilteredProductsScreen({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<AccountHomePage> createState() => _AccountHomePageState();
+  ConsumerState<FilteredProductsScreen> createState() =>
+      _FilteredProductsScreenState();
 }
 
-class _AccountHomePageState extends ConsumerState<AccountHomePage> {
+class _FilteredProductsScreenState
+    extends ConsumerState<FilteredProductsScreen> {
   final _searchController = TextEditingController();
 
   @override
@@ -43,28 +39,23 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage> {
     );
   }
 
-  void _logout() {
-    SessionManager.logout();
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const AccountGate()),
-    );
-  }
+  // ── Build ────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final filteredAsync = ref.watch(filteredProductsProvider);
-    final restAsync     = ref.watch(restrictionsProvider);
-    final activeLabels  = restAsync.valueOrNull?.activeLabels ?? [];
+    final filteredAsync  = ref.watch(filteredProductsProvider);
+    final restAsync      = ref.watch(restrictionsProvider);
+    final activeLabels   = restAsync.valueOrNull?.activeLabels ?? [];
 
     return Scaffold(
       backgroundColor: AppColors.offWhite,
       appBar: AppBar(
+        title: const Text('My Products',
+            style: TextStyle(color: Colors.white)),
         backgroundColor: AppColors.sageGreen,
-        title: const Text('My Account', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          // Preferences button with active-filter badge
+          // Filter badge: shows count of active dietary restrictions
           Stack(
             alignment: Alignment.topRight,
             children: [
@@ -88,52 +79,22 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage> {
                       child: Text(
                         '${activeLabels.length}',
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
                 ),
             ],
           ),
-          // Logout
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            tooltip: 'Logout',
-            onPressed: _logout,
-          ),
         ],
       ),
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Greeting ────────────────────────────────────────────────────
+          // ── Search bar ────────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
-            child: Text(
-              'Welcome back, ${widget.user.username}!',
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: Text(
-              activeLabels.isEmpty
-                  ? 'Showing all products'
-                  : 'Filtered by: ${activeLabels.join(', ')}',
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-            ),
-          ),
-
-          // ── Search bar ───────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
               controller: _searchController,
               onChanged: (v) =>
@@ -164,40 +125,29 @@ class _AccountHomePageState extends ConsumerState<AccountHomePage> {
             ),
           ),
 
-          const SizedBox(height: 10),
-
-          // ── Active filter chips ──────────────────────────────────────────
+          // ── Active filter chips ───────────────────────────────────────────
           if (activeLabels.isNotEmpty)
             SizedBox(
-              height: 38,
+              height: 40,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  ...activeLabels.map(
-                        (label) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Chip(
-                        label:
-                        Text(label, style: const TextStyle(fontSize: 12)),
-                        backgroundColor: AppColors.softMint,
-                        side: BorderSide(color: AppColors.sageGreen),
-                        visualDensity: VisualDensity.compact,
-                        onDeleted: () {
-                          // Tapping × on a chip clears ALL filters for simplicity;
-                          // swap for per-chip logic if needed.
-                          ref
-                              .read(restrictionsProvider.notifier)
-                              .save(const DietaryRestrictions());
-                        },
-                      ),
+                children: activeLabels.map((label) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Chip(
+                      label: Text(label,
+                          style: const TextStyle(fontSize: 12)),
+                      backgroundColor: AppColors.softMint,
+                      side: BorderSide(color: AppColors.sageGreen),
+                      visualDensity: VisualDensity.compact,
                     ),
-                  ),
-                ],
+                  );
+                }).toList(),
               ),
             ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
 
           // ── Product list ─────────────────────────────────────────────────
           Expanded(
@@ -236,10 +186,10 @@ class _ProductList extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Text(
             '${products.length} product${products.length == 1 ? '' : 's'}',
-            style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
           ),
         ),
         Expanded(
@@ -265,8 +215,7 @@ class _ProductCard extends ConsumerWidget {
     final isDisliked = ref
         .watch(dislikedBarcodesProvider)
         .valueOrNull
-        ?.contains(product.barcode) ??
-        false;
+        ?.contains(product.barcode) ?? false;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -274,8 +223,7 @@ class _ProductCard extends ConsumerWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       color: Colors.white,
       child: ListTile(
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: _ProductImage(imageUrl: product.imageUrl),
         title: Text(
           product.name,
@@ -287,30 +235,24 @@ class _ProductCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (product.brand != null && product.brand!.isNotEmpty)
-              Text(
-                product.brand!,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
+              Text(product.brand!,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600])),
             const SizedBox(height: 4),
             _DietaryBadgeRow(product: product),
           ],
         ),
         trailing: IconButton(
           icon: Icon(
-            Icons.visibility_off_outlined,
+            isDisliked ? Icons.visibility_off : Icons.visibility_off_outlined,
             color: isDisliked ? Colors.red[300] : Colors.grey[400],
             size: 20,
           ),
           tooltip: isDisliked ? 'Unhide product' : 'Hide product',
           onPressed: () {
             if (isDisliked) {
-              ref
-                  .read(dislikedBarcodesProvider.notifier)
-                  .undislike(product.barcode);
+              ref.read(dislikedBarcodesProvider.notifier).undislike(product.barcode);
             } else {
-              ref
-                  .read(dislikedBarcodesProvider.notifier)
-                  .dislike(product.barcode);
+              ref.read(dislikedBarcodesProvider.notifier).dislike(product.barcode);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('${product.name} hidden'),
@@ -346,36 +288,39 @@ class _DietaryBadgeRow extends StatelessWidget {
       badges.add(const _Badge('🌱 Vegan', Colors.green));
     else if (product.isDefinitelyVegetarian)
       badges.add(const _Badge('🥦 Vegetarian', Colors.lightGreen));
+
     if (product.isDefinitelyGlutenFree)
       badges.add(const _Badge('🌾 GF', Colors.amber));
+
     if (product.isDefinitelyDairyFree)
       badges.add(const _Badge('🥛 DF', Colors.purple));
+
+    // Unknown status indicator
     if (product.hasUnknownVeganStatus &&
         product.hasUnknownVegetarianStatus &&
         product.hasUnknownGlutenFreeStatus &&
-        product.hasUnknownDairyFreeStatus)
+        product.hasUnknownDairyFreeStatus) {
       badges.add(const _Badge('❓ Info limited', Colors.grey));
+    }
 
     if (badges.isEmpty) return const SizedBox.shrink();
 
     return Wrap(
       spacing: 4,
-      children: badges
-          .map((b) => Container(
-        padding:
-        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: b.color.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: b.color.withOpacity(0.4)),
-        ),
-        child: Text(
-          b.label,
-          style: TextStyle(
-              fontSize: 10, color: b.color.withOpacity(0.9)),
-        ),
-      ))
-          .toList(),
+      children: badges.map((b) => _buildChip(b)).toList(),
+    );
+  }
+
+  Widget _buildChip(_Badge b) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: b.color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: b.color.withOpacity(0.4)),
+      ),
+      child: Text(b.label,
+          style: TextStyle(fontSize: 10, color: b.color.withOpacity(0.9))),
     );
   }
 }
@@ -396,8 +341,7 @@ class _ProductImage extends StatelessWidget {
   Widget build(BuildContext context) {
     if (imageUrl == null || imageUrl!.isEmpty) {
       return Container(
-        width: 52,
-        height: 52,
+        width: 52, height: 52,
         decoration: BoxDecoration(
           color: Colors.grey[100],
           borderRadius: BorderRadius.circular(10),
@@ -410,12 +354,9 @@ class _ProductImage extends StatelessWidget {
       borderRadius: BorderRadius.circular(10),
       child: Image.network(
         imageUrl!,
-        width: 52,
-        height: 52,
-        fit: BoxFit.cover,
+        width: 52, height: 52, fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => Container(
-          width: 52,
-          height: 52,
+          width: 52, height: 52,
           color: Colors.grey[100],
           child: Icon(Icons.broken_image_outlined,
               color: Colors.grey[400], size: 28),
@@ -430,8 +371,7 @@ class _ProductImage extends StatelessWidget {
 class _EmptyView extends StatelessWidget {
   final bool hasFilters;
   final VoidCallback onClearFilters;
-  const _EmptyView(
-      {required this.hasFilters, required this.onClearFilters});
+  const _EmptyView({required this.hasFilters, required this.onClearFilters});
 
   @override
   Widget build(BuildContext context) {

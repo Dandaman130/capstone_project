@@ -10,28 +10,28 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   void _signUp() {
-    final email = _emailController.text.trim();
+    final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
+    if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Fields cannot be empty")),
       );
       return;
     }
 
-    if (AccountRepository.emailExists(email)) {
+    if (AccountRepository.usernameExists(username)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Account already exists")),
       );
@@ -40,7 +40,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
     final newAccount = AccountLogin(
       userId: AccountRepository.accounts.length + 1,
-      email: email,
+      username: username,
       password: password,
     );
 
@@ -66,9 +66,9 @@ class _SignUpPageState extends State<SignUpPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextField(
-              controller: _emailController,
+              controller: _usernameController,
               decoration: const InputDecoration(
-                labelText: 'Email',
+                labelText: 'username',
                 border: OutlineInputBorder(),
               ),
             ),
