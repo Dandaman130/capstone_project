@@ -39,6 +39,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   mobile_scanner: ^7.0.1
   flutter_riverpod: ^2.0.0
+  url_launcher: ^6.3.2
+  share_plus: ^12.0.1
 
 dev_dependencies:
   flutter_test:
@@ -58,6 +60,7 @@ dev_dependencies:
 flutter:
   assets:
     - assets/sample/sample_products.json
+    - lib/theme/vinebg.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

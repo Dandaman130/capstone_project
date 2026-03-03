@@ -202,15 +202,27 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // ==================== SEARCH BAR ====================
-          Container(
-            color: AppColors.sageGreen,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      body: Container(
+        // Background with sage green color and vine pattern image overlay
+        decoration: BoxDecoration(
+          color: AppColors.sageGreen,
+          image: DecorationImage(
+            image: AssetImage('lib/theme/vinebg.png'),
+            fit: BoxFit.none,
+            scale: 1.8,
+            // repeat: ImageRepeat.repeat,
+            opacity: 1.0, // Adjust opacity for subtle background effect
+          ),
+        ),
+        child: Column(
+          children: [
+            // ==================== SEARCH BAR ====================
+            Container(
+              color: Colors.transparent,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: TextField(
               decoration: InputDecoration(
-                hintText: 'Search products...',
+                hintText: 'What are you looking for?',
                 hintStyle: TextStyle(color: AppColors.mutedGreen),
                 prefixIcon: Icon(Icons.search, color: AppColors.sageGreen),
                 // Show loading spinner while searching
@@ -269,6 +281,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
