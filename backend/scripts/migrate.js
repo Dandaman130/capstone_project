@@ -290,7 +290,7 @@ async function migrate() {
     // Clean up checkpoint — migration finished successfully
     if (fs.existsSync(CHECKPOINT_FILE)) {
       fs.unlinkSync(CHECKPOINT_FILE);
-      console.log('    Checkpoint file deleted.');+
+      console.log('    Checkpoint file deleted.');
     }
 
   } catch (err) {
