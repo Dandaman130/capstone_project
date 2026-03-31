@@ -1,7 +1,10 @@
 /*
-Current State 9/24/25 Last Modified v(beta 1.0)
+Current State 1/6/26 Last Modified v(A 1.2)
 this is the code for cerating Obj for Temp Cache this cache gets destroyed after
 hotreload so this should be finalized for app deployment
+
+Added Fields:
+-Countries Available In
 
 Things to Consider
 adding @hive package for persistant caching which can be used for favorites
@@ -16,6 +19,7 @@ class ScannedProduct {
   final String nutriScore;
   final String ingredients;
   final String? imageUrl; // Add image URL field
+  final String? countries; // Add countries field
 
   ScannedProduct({
     required this.barcode,
@@ -25,6 +29,7 @@ class ScannedProduct {
     required this.nutriScore,
     required this.ingredients,
     this.imageUrl, // Optional image URL
+    this.countries, 
   });
 
   factory ScannedProduct.fromJson(String barcode, Map<String, dynamic> json) {
@@ -36,6 +41,7 @@ class ScannedProduct {
       nutriScore: (json['nutriscore_grade'] ?? 'N/A').toUpperCase(),
       ingredients: json['ingredients_text'] ?? 'Ingredients not listed',
       imageUrl: json['image_url'] ?? json['image_front_url'] ?? json['image_front_small_url'],
+      countries: json['countries'] ?? 'Unknown', // Edit this once completed
     );
   }
 }
