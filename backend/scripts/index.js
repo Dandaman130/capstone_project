@@ -88,16 +88,15 @@ app.get('/api/products', async (req, res) => {
         p.barcode,
         p.name,
         p.brand,
-        p.image_url,
         p.is_vegan,
         p.is_vegetarian,
         p.is_gluten_free,
         p.is_dairy_free,
         STRING_AGG(DISTINCT c.name, ',') as categories
       FROM products p
-      LEFT JOIN product_categories pc ON p.barcode = pc.barcode
+      LEFT JOIN product_categories pc ON p.id = pc.product_id
       LEFT JOIN categories c ON pc.category_id = c.id
-      GROUP BY p.barcode, p.name, p.brand, p.image_url, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
+      GROUP BY p.barcode, p.name, p.brand, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
       LIMIT $1
     `, [limit]);
     res.json(result.rows);
@@ -119,17 +118,16 @@ app.get('/api/products/:barcode', async (req, res) => {
         p.barcode,
         p.name,
         p.brand,
-        p.image_url,
         p.is_vegan,
         p.is_vegetarian,
         p.is_gluten_free,
         p.is_dairy_free,
         STRING_AGG(DISTINCT c.name, ',') as categories
       FROM products p
-      LEFT JOIN product_categories pc ON p.barcode = pc.barcode
+      LEFT JOIN product_categories pc ON p.id = pc.product_id
       LEFT JOIN categories c ON pc.category_id = c.id
       WHERE p.barcode = $1
-      GROUP BY p.barcode, p.name, p.brand, p.image_url, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
+      GROUP BY p.barcode, p.name, p.brand, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
     `, [barcode]);
 
     if (result.rows.length === 0) {
@@ -155,17 +153,16 @@ app.get('/api/search', async (req, res) => {
         p.barcode,
         p.name,
         p.brand,
-        p.image_url,
         p.is_vegan,
         p.is_vegetarian,
         p.is_gluten_free,
         p.is_dairy_free,
         STRING_AGG(DISTINCT c.name, ',') as categories
       FROM products p
-      LEFT JOIN product_categories pc ON p.barcode = pc.barcode
+      LEFT JOIN product_categories pc ON p.id = pc.product_id
       LEFT JOIN categories c ON pc.category_id = c.id
       WHERE p.name ILIKE $1
-      GROUP BY p.barcode, p.name, p.brand, p.image_url, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
+      GROUP BY p.barcode, p.name, p.brand, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
       LIMIT 20
     `, [`%${q}%`]);
     res.json(result.rows);
@@ -192,22 +189,21 @@ app.get('/api/categories/:category', async (req, res) => {
         p.barcode,
         p.name,
         p.brand,
-        p.image_url,
         p.is_vegan,
         p.is_vegetarian,
         p.is_gluten_free,
         p.is_dairy_free,
         STRING_AGG(DISTINCT c.name, ',') as categories
       FROM products p
-      JOIN product_categories pc ON p.barcode = pc.barcode
+      JOIN product_categories pc ON p.id = pc.product_id
       JOIN categories c ON pc.category_id = c.id
       WHERE EXISTS (
         SELECT 1 FROM product_categories pc2
         JOIN categories c2 ON pc2.category_id = c2.id
-        WHERE pc2.barcode = p.barcode
+        WHERE pc2.product_id = p.id
         AND c2.name ILIKE $1
       )
-      GROUP BY p.barcode, p.name, p.brand, p.image_url, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
+      GROUP BY p.barcode, p.name, p.brand, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
       LIMIT $2
     `, [`%${category}%`, limit]);
 
@@ -243,22 +239,21 @@ app.get('/api/categories-batch', async (req, res) => {
           p.barcode,
           p.name,
           p.brand,
-          p.image_url,
           p.is_vegan,
           p.is_vegetarian,
           p.is_gluten_free,
           p.is_dairy_free,
           STRING_AGG(DISTINCT c.name, ',') as categories
         FROM products p
-        JOIN product_categories pc ON p.barcode = pc.barcode
+        JOIN product_categories pc ON p.id = pc.product_id
         JOIN categories c ON pc.category_id = c.id
         WHERE EXISTS (
           SELECT 1 FROM product_categories pc2
           JOIN categories c2 ON pc2.category_id = c2.id
-          WHERE pc2.barcode = p.barcode
+          WHERE pc2.product_id = p.id
           AND c2.name ILIKE $1
         )
-        GROUP BY p.barcode, p.name, p.brand, p.image_url, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
+        GROUP BY p.barcode, p.name, p.brand, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
         LIMIT $2
       `, [`%${category}%`, limit]);
 
@@ -295,17 +290,16 @@ app.get('/api/products-by-barcodes', async (req, res) => {
         p.barcode,
         p.name,
         p.brand,
-        p.image_url,
         p.is_vegan,
         p.is_vegetarian,
         p.is_gluten_free,
         p.is_dairy_free,
         STRING_AGG(DISTINCT c.name, ',') as categories
       FROM products p
-      LEFT JOIN product_categories pc ON p.barcode = pc.barcode
+      LEFT JOIN product_categories pc ON p.id = pc.product_id
       LEFT JOIN categories c ON pc.category_id = c.id
       WHERE p.barcode IN (${placeholders})
-      GROUP BY p.barcode, p.name, p.brand, p.image_url, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
+      GROUP BY p.barcode, p.name, p.brand, p.is_vegan, p.is_vegetarian, p.is_gluten_free, p.is_dairy_free
     `;
 
     const result = await pool.query(query, barcodes);
@@ -360,12 +354,11 @@ app.get('/api/debug/stats', async (req, res) => {
         p.barcode,
         p.name,
         p.brand,
-        p.image_url,
         STRING_AGG(DISTINCT c.name, ',') as categories
       FROM products p
-      LEFT JOIN product_categories pc ON p.barcode = pc.barcode
+      LEFT JOIN product_categories pc ON p.id = pc.product_id
       LEFT JOIN categories c ON pc.category_id = c.id
-      GROUP BY p.barcode, p.name, p.brand, p.image_url
+      GROUP BY p.barcode, p.name, p.brand
       LIMIT 5
     `);
 
