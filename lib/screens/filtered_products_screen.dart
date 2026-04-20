@@ -1,8 +1,7 @@
 /*
-  FilteredProductsScreen
-  Account home screen: displays Railway DB products filtered by the user's
-  dietary restrictions and personal preferences. Tapping the filter icon
-  opens PreferencesScreen.
+  FilteredProductsScreen - Botanical Refactor
+  Displays Railway DB products filtered by dietary restrictions.
+  Integrated with central AppColors and vine background.
 */
 
 import 'package:flutter/material.dart';
@@ -10,9 +9,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/product.dart';
 import '../providers/preferences_provider.dart';
 import '../screens/preferences_screen.dart';
-import '../services/dietary_filter_service.dart';
-import '../services/user_preferences_service.dart';
+import '../services/user_preferences_service.dart'; // Direct access to DietaryRestrictions
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 
 class FilteredProductsScreen extends ConsumerStatefulWidget {
   const FilteredProductsScreen({Key? key}) : super(key: key);
@@ -39,149 +38,156 @@ class _FilteredProductsScreenState
     );
   }
 
-  // ── Build ────────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
-    final filteredAsync  = ref.watch(filteredProductsProvider);
-    final restAsync      = ref.watch(restrictionsProvider);
-    final activeLabels   = restAsync.valueOrNull?.activeLabels ?? [];
+    final filteredAsync = ref.watch(filteredProductsProvider);
+    final restAsync     = ref.watch(restrictionsProvider);
+    final activeLabels  = restAsync.valueOrNull?.activeLabels ?? [];
 
     return Scaffold(
-      backgroundColor: AppColors.offWhite,
+      backgroundColor: AppColors.forestDeep,
       appBar: AppBar(
-        title: const Text('My Products',
-            style: TextStyle(color: Colors.white)),
-        backgroundColor: AppColors.sageGreen,
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('My Products', style: TextStyle(color: AppColors.parchment)),
+        backgroundColor: AppColors.forestDeep,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.parchment),
         actions: [
-          // Filter badge: shows count of active dietary restrictions
-          Stack(
-            alignment: Alignment.topRight,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.tune, color: Colors.white),
-                tooltip: 'Dietary Preferences',
-                onPressed: _openPreferences,
-              ),
-              if (activeLabels.isNotEmpty)
-                Positioned(
-                  right: 6,
-                  top: 6,
-                  child: Container(
-                    width: 16,
-                    height: 16,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${activeLabels.length}',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ),
+          _buildFilterBadge(activeLabels),
+        ],
+      ),
+      body: Container(
+        decoration: AppTheme.vineBackground,
+        child: Column(
+          children: [
+            // ── Search bar ────────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: TextField(
+                controller: _searchController,
+                style: const TextStyle(color: AppColors.parchment),
+                onChanged: (v) => ref.read(searchQueryProvider.notifier).state = v,
+                decoration: InputDecoration(
+                  hintText: 'Search products…',
+                  hintStyle: TextStyle(color: AppColors.mossGreen.withOpacity(0.7)),
+                  prefixIcon: const Icon(Icons.search, color: AppColors.mossGreen),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                    icon: const Icon(Icons.clear, color: AppColors.mossGreen),
+                    onPressed: () {
+                      _searchController.clear();
+                      ref.read(searchQueryProvider.notifier).state = '';
+                    },
+                  )
+                      : null,
+                  filled: true,
+                  fillColor: AppColors.forestMid.withOpacity(0.5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: AppColors.mossGreen.withOpacity(0.2)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: AppColors.agedGold),
                   ),
                 ),
-            ],
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // ── Search bar ────────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (v) =>
-              ref.read(searchQueryProvider.notifier).state = v,
-              decoration: InputDecoration(
-                hintText: 'Search products…',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    ref.read(searchQueryProvider.notifier).state = '';
-                  },
+              ),
+            ),
+
+            // ── Active filter chips ───────────────────────────────────────────
+            if (activeLabels.isNotEmpty)
+              SizedBox(
+                height: 40,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: activeLabels.map((label) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Chip(
+                        label: Text(label, style: const TextStyle(fontSize: 12, color: AppColors.parchment)),
+                        backgroundColor: AppColors.mossGreen.withOpacity(0.3),
+                        side: BorderSide(color: AppColors.mossGreen.withOpacity(0.5)),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+            const SizedBox(height: 4),
+
+            // ── Product list ─────────────────────────────────────────────────
+            Expanded(
+              child: filteredAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator(color: AppColors.agedGold)),
+                error: (e, _) => _ErrorView(
+                  message: e.toString(),
+                  onRetry: () => ref.invalidate(allProductsProvider),
+                ),
+                data: (List<Product> products) => products.isEmpty
+                    ? _EmptyView(
+                  hasFilters: activeLabels.isNotEmpty,
+                  onClearFilters: () => ref
+                      .read(restrictionsProvider.notifier)
+                      .save(const DietaryRestrictions()),
                 )
-                    : null,
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
+                    : _ProductList(products: products),
               ),
             ),
-          ),
-
-          // ── Active filter chips ───────────────────────────────────────────
-          if (activeLabels.isNotEmpty)
-            SizedBox(
-              height: 40,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: activeLabels.map((label) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Chip(
-                      label: Text(label,
-                          style: const TextStyle(fontSize: 12)),
-                      backgroundColor: AppColors.softMint,
-                      side: BorderSide(color: AppColors.sageGreen),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-
-          const SizedBox(height: 4),
-
-          // ── Product list ─────────────────────────────────────────────────
-          Expanded(
-            child: filteredAsync.when(
-              loading: () =>
-              const Center(child: CircularProgressIndicator()),
-              error: (e, _) => _ErrorView(
-                message: e.toString(),
-                onRetry: () => ref.invalidate(allProductsProvider),
-              ),
-              data: (products) => products.isEmpty
-                  ? _EmptyView(
-                hasFilters: activeLabels.isNotEmpty,
-                onClearFilters: () => ref
-                    .read(restrictionsProvider.notifier)
-                    .save(const DietaryRestrictions()),
-              )
-                  : _ProductList(products: products),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildFilterBadge(List<String> activeLabels) {
+    return Stack(
+      alignment: Alignment.topRight,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.tune, color: AppColors.parchment),
+          tooltip: 'Dietary Preferences',
+          onPressed: _openPreferences,
+        ),
+        if (activeLabels.isNotEmpty)
+          Positioned(
+            right: 6,
+            top: 6,
+            child: Container(
+              width: 16,
+              height: 16,
+              decoration: const BoxDecoration(
+                color: AppColors.agedGold,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  '${activeLabels.length}',
+                  style: const TextStyle(
+                      color: AppColors.forestDeep,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
 
 // ── Product List ───────────────────────────────────────────────────────────────
 
-class _ProductList extends ConsumerWidget {
+class _ProductList extends StatelessWidget {
   final List<Product> products;
-  const _ProductList({required this.products});
+  const _ProductList({Key? key, required this.products}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -189,12 +195,12 @@ class _ProductList extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Text(
             '${products.length} product${products.length == 1 ? '' : 's'}',
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            style: const TextStyle(fontSize: 13, color: AppColors.mistGreen),
           ),
         ),
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
             itemCount: products.length,
             itemBuilder: (_, i) => _ProductCard(product: products[i]),
           ),
@@ -208,26 +214,26 @@ class _ProductList extends ConsumerWidget {
 
 class _ProductCard extends ConsumerWidget {
   final Product product;
-  const _ProductCard({required this.product});
+  const _ProductCard({Key? key, required this.product}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDisliked = ref
-        .watch(dislikedBarcodesProvider)
-        .valueOrNull
-        ?.contains(product.barcode) ?? false;
+    final isDisliked = ref.watch(dislikedBarcodesProvider).valueOrNull?.contains(product.barcode) ?? false;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      color: Colors.white,
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      color: AppColors.forestMid.withOpacity(0.5),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppColors.mossGreen.withOpacity(0.2)),
+      ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.all(12),
         leading: _ProductImage(imageUrl: product.imageUrl),
         title: Text(
           product.name,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          style: const TextStyle(color: AppColors.parchment, fontWeight: FontWeight.w600, fontSize: 15),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
@@ -235,46 +241,31 @@ class _ProductCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (product.brand != null && product.brand!.isNotEmpty)
-              Text(product.brand!,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-            const SizedBox(height: 4),
+              Text(product.brand!, style: const TextStyle(fontSize: 12, color: AppColors.fernGreen)),
+            const SizedBox(height: 6),
             _DietaryBadgeRow(product: product),
           ],
         ),
         trailing: IconButton(
           icon: Icon(
-            isDisliked ? Icons.visibility_off : Icons.visibility_off_outlined,
-            color: isDisliked ? Colors.red[300] : Colors.grey[400],
+            isDisliked ? Icons.visibility_off : Icons.visibility_outlined,
+            color: isDisliked ? AppColors.agedGold : AppColors.mossGreen.withOpacity(0.6),
             size: 20,
           ),
-          tooltip: isDisliked ? 'Unhide product' : 'Hide product',
           onPressed: () {
             if (isDisliked) {
               ref.read(dislikedBarcodesProvider.notifier).undislike(product.barcode);
             } else {
               ref.read(dislikedBarcodesProvider.notifier).dislike(product.barcode);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${product.name} hidden'),
-                  action: SnackBarAction(
-                    label: 'Undo',
-                    onPressed: () => ref
-                        .read(dislikedBarcodesProvider.notifier)
-                        .undislike(product.barcode),
-                  ),
-                  duration: const Duration(seconds: 3),
-                ),
-              );
             }
           },
         ),
-        isThreeLine: true,
       ),
     );
   }
 }
 
-// ── Dietary badge row ─────────────────────────────────────────────────────────
+// ── Helper Widgets (Badges, Images, Error, Empty) ──────────────────────────
 
 class _DietaryBadgeRow extends StatelessWidget {
   final Product product;
@@ -282,56 +273,27 @@ class _DietaryBadgeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badges = <_Badge>[];
-
-    if (product.isDefinitelyVegan)
-      badges.add(const _Badge('🌱 Vegan', Colors.green));
-    else if (product.isDefinitelyVegetarian)
-      badges.add(const _Badge('🥦 Vegetarian', Colors.lightGreen));
-
-    if (product.isDefinitelyGlutenFree)
-      badges.add(const _Badge('🌾 GF', Colors.amber));
-
-    if (product.isDefinitelyDairyFree)
-      badges.add(const _Badge('🥛 DF', Colors.purple));
-
-    // Unknown status indicator
-    if (product.hasUnknownVeganStatus &&
-        product.hasUnknownVegetarianStatus &&
-        product.hasUnknownGlutenFreeStatus &&
-        product.hasUnknownDairyFreeStatus) {
-      badges.add(const _Badge('❓ Info limited', Colors.grey));
-    }
+    final badges = <Widget>[];
+    if (product.isDefinitelyVegan) badges.add(_buildBadge('Vegan'));
+    if (product.isDefinitelyGlutenFree) badges.add(_buildBadge('GF'));
+    if (product.isDefinitelyDairyFree) badges.add(_buildBadge('DF'));
 
     if (badges.isEmpty) return const SizedBox.shrink();
-
-    return Wrap(
-      spacing: 4,
-      children: badges.map((b) => _buildChip(b)).toList(),
-    );
+    return Wrap(spacing: 4, children: badges);
   }
 
-  Widget _buildChip(_Badge b) {
+  Widget _buildBadge(String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: b.color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: b.color.withOpacity(0.4)),
+        color: AppColors.mossGreen.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.mossGreen.withOpacity(0.4)),
       ),
-      child: Text(b.label,
-          style: TextStyle(fontSize: 10, color: b.color.withOpacity(0.9))),
+      child: Text(label, style: const TextStyle(fontSize: 9, color: AppColors.mistGreen, fontWeight: FontWeight.bold)),
     );
   }
 }
-
-class _Badge {
-  final String label;
-  final Color color;
-  const _Badge(this.label, this.color);
-}
-
-// ── Product image ─────────────────────────────────────────────────────────────
 
 class _ProductImage extends StatelessWidget {
   final String? imageUrl;
@@ -339,34 +301,22 @@ class _ProductImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (imageUrl == null || imageUrl!.isEmpty) {
-      return Container(
-        width: 52, height: 52,
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(Icons.inventory_2_outlined,
-            color: Colors.grey[400], size: 28),
-      );
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: Image.network(
-        imageUrl!,
-        width: 52, height: 52, fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
-          width: 52, height: 52,
-          color: Colors.grey[100],
-          child: Icon(Icons.broken_image_outlined,
-              color: Colors.grey[400], size: 28),
-        ),
+    return Container(
+      width: 52, height: 52,
+      decoration: BoxDecoration(
+        color: AppColors.forestDeep,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.mossGreen.withOpacity(0.2)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(11),
+        child: (imageUrl != null && imageUrl!.isNotEmpty)
+            ? Image.network(imageUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.eco, color: AppColors.mossGreen))
+            : const Icon(Icons.bakery_dining, color: AppColors.mossGreen),
       ),
     );
   }
 }
-
-// ── Empty / Error views ───────────────────────────────────────────────────────
 
 class _EmptyView extends StatelessWidget {
   final bool hasFilters;
@@ -376,34 +326,15 @@ class _EmptyView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.filter_list_off, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              hasFilters
-                  ? 'No products match your current filters.'
-                  : 'No products found.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-            ),
-            if (hasFilters) ...[
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: onClearFilters,
-                icon: const Icon(Icons.clear_all),
-                label: const Text('Clear Filters'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.sageGreen,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ],
-          ],
-        ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.filter_list_off, size: 64, color: AppColors.mossGreen),
+          const SizedBox(height: 16),
+          const Text('No matches found.', style: TextStyle(color: AppColors.parchment, fontSize: 16)),
+          if (hasFilters)
+            TextButton(onPressed: onClearFilters, child: const Text('Clear Filters', style: TextStyle(color: AppColors.agedGold))),
+        ],
       ),
     );
   }
@@ -420,17 +351,10 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
+          const Icon(Icons.error_outline, size: 64, color: Colors.redAccent),
           const SizedBox(height: 16),
-          Text(message,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600])),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
-          ),
+          Text(message, style: const TextStyle(color: AppColors.parchment)),
+          TextButton(onPressed: onRetry, child: const Text('Retry', style: TextStyle(color: AppColors.agedGold))),
         ],
       ),
     );

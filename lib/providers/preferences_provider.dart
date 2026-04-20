@@ -123,34 +123,24 @@ final allProductsProvider = FutureProvider<List<Product>>((ref) async {
 });
 
 // ── Filtered Railway products ─────────────────────────────────────────────────
-final filteredProductsProvider = Provider<AsyncValue<List<Product>>>((ref) {
-  final allAsync       = ref.watch(allProductsProvider);
-  final restAsync      = ref.watch(restrictionsProvider);
-  final keywordsAsync  = ref.watch(avoidedKeywordsProvider);
-  final dislikedAsync  = ref.watch(dislikedBarcodesProvider);
-  final query          = ref.watch(searchQueryProvider);
+// ── Filtered Railway products ─────────────────────────────────────────────────
+// Changed to FutureProvider for better AsyncValue handling
+final filteredProductsProvider = FutureProvider<List<Product>>((ref) async {
+  // We use .future or .value to ensure we aren't nesting AsyncValues
+  final allProducts = await ref.watch(allProductsProvider.future);
+  final rest        = await ref.watch(restrictionsProvider.future);
+  final keywords    = await ref.watch(avoidedKeywordsProvider.future);
+  final disliked    = await ref.watch(dislikedBarcodesProvider.future);
+  final query       = ref.watch(searchQueryProvider);
 
-  // If any upstream is loading/error, propagate that state
-  if (allAsync.isLoading || restAsync.isLoading ||
-      keywordsAsync.isLoading || dislikedAsync.isLoading) {
-    return const AsyncLoading();
-  }
-  if (allAsync.hasError) return AsyncError(allAsync.error!, StackTrace.empty);
-
-  final products   = allAsync.valueOrNull ?? [];
-  final rest       = restAsync.valueOrNull ?? const DietaryRestrictions();
-  final keywords   = keywordsAsync.valueOrNull ?? [];
-  final disliked   = dislikedAsync.valueOrNull ?? {};
-
-  final filtered = DietaryFilterService.filterProducts(
-    products: products,
+  // The logic remains the same, but the return is a clean List<Product>
+  return DietaryFilterService.filterProducts(
+    products: allProducts,
     restrictions: rest,
     avoidedKeywords: keywords,
     dislikedBarcodes: disliked,
     searchQuery: query,
   );
-
-  return AsyncData(filtered);
 });
 
 // ── Filtered ScannedProduct list ──────────────────────────────────────────────

@@ -1,27 +1,21 @@
 import 'package:flutter/material.dart';
 
-/// App Color Scheme
-/// Centralized color palette for consistent theming across the app
 class AppColors {
-  // Prevent instantiation
   AppColors._();
 
-  // Primary Color Palette
-  static const Color softMint = Color(0xFFCBDED3);
-  static const Color mutedGreen = Color(0xFF8BA49A);
-  static const Color lightTan = Color(0xFFD2C49E);
-  static const Color sageGreen = Color(0xFF3B6255);
-  static const Color offWhite = Color(0xFFE2DFDA);
+  // Core Botanical Palette
+  static const Color forestDeep  = Color(0xFF1E3A2F);
+  static const Color forestMid   = Color(0xFF2D5A3D);
+  static const Color mossGreen   = Color(0xFF4A7C59);
+  static const Color fernGreen   = Color(0xFF6B9E78);
+  static const Color mistGreen   = Color(0xFFB8D4BE);
 
-  // Optional: Semantic color names for specific use cases
-  static const Color primaryBackground = offWhite;
-  static const Color cardBackground = softMint;
-  static const Color primaryAccent = sageGreen;
-  static const Color secondaryAccent = mutedGreen;
-  static const Color highlightAccent = lightTan;
+  static const Color parchment   = Color(0xFFF5EDD8);
+  static const Color warmCream   = Color(0xFFEDE4CC);
 
-  // Text colors
-  static const Color textPrimary = Colors.black87;
-  static const Color textSecondary = Colors.black54;
-  static const Color textOnPrimary = Colors.white;
+  static const Color barkBrown   = Color(0xFF6B4F35);
+  static const Color agedGold    = Color(0xFFB8943F);
+  static const Color goldenMoss  = Color(0xFFD4A843);
+
+  static const Color deepShadow  = Color(0xFF0F1F17);
 }
