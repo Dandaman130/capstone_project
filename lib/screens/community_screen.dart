@@ -3,7 +3,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
 import 'favorites.dart';
 import 'account.dart';
 
@@ -28,8 +27,6 @@ class CommunityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // We set the Scaffold background to transparent so the Container's
-      // vine background is what shines through.
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -48,8 +45,16 @@ class CommunityScreen extends StatelessWidget {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        // 🌿 Using the vineBackground from your AppTheme
-        decoration: AppTheme.vineBackground,
+        // 🌿 Hardcoded decoration logic using the lib path
+        decoration: const BoxDecoration(
+          color: AppColors.forestDeep,
+          image: DecorationImage(
+            image: AssetImage('lib/theme/vinebg.png'),
+            repeat: ImageRepeat.repeat,
+            scale: 1.8,
+            opacity: 0.18,
+          ),
+        ),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -105,7 +110,7 @@ class CommunityScreen extends StatelessWidget {
     );
   }
 
-  // ── Nav Button Component (Centered Icons) ──────────────────────────────────
+  // ── Nav Button Component ───────────────────────────────────────────────────
 
   Widget _buildNavButton(BuildContext context, IconData icon, String label, Widget screen) {
     return Column(
@@ -117,8 +122,6 @@ class CommunityScreen extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.forestMid,
               foregroundColor: AppColors.agedGold,
-              // padding: EdgeInsets.zero removes the default horizontal
-              // padding that pushes icons off-center in small buttons.
               padding: EdgeInsets.zero,
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -130,7 +133,6 @@ class CommunityScreen extends StatelessWidget {
               context,
               MaterialPageRoute(builder: (context) => screen),
             ),
-            // Center ensures the icon is dead-center within the button.
             child: Center(
               child: Icon(icon, size: 28),
             ),

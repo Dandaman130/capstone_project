@@ -1,12 +1,5 @@
-/*
-Current State 12/13/25 Last Modified v(Alpha 2.2)
-- Favorites Screen - User's saved/favorited items
-- Integrated with New Botanical Theme (AppColors & AppTheme)
-*/
-
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
 
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({Key? key}) : super(key: key);
@@ -14,26 +7,34 @@ class FavoritesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Use forestDeep instead of the old sageGreen
-      backgroundColor: AppColors.forestDeep,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text(
           'Favorites',
-          style: TextStyle(color: AppColors.parchment), // Swapped offWhite for parchment
+          style: TextStyle(color: AppColors.parchment, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: AppColors.forestDeep,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.parchment),
       ),
       body: Container(
-        // Reusing the centralized vine background logic from AppTheme
-        decoration: AppTheme.vineBackground,
-        child: const Center(
-          child: Text(
-            'Saved Things & flags go here',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.mistGreen, // Mist green looks great for body text on dark green
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          color: AppColors.forestDeep,
+          image: DecorationImage(
+            image: AssetImage('lib/theme/vinebg.png'), // Path to your file
+            repeat: ImageRepeat.repeat,
+            scale: 1.8,
+            opacity: 0.18,
+          ),
+        ),
+        child: const SafeArea(
+          child: Center(
+            child: Text(
+              'Your favorites will bloom here.',
+              style: TextStyle(color: AppColors.mistGreen, fontStyle: FontStyle.italic),
             ),
           ),
         ),

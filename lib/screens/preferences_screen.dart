@@ -1,7 +1,7 @@
 /*
   PreferencesScreen - Botanical Refactor
   Configures dietary restrictions and personal ingredient preferences.
-  Integrated with central AppColors and vine background.
+  Applied hardcoded vine background and transparent Scaffold.
 */
 
 import 'package:flutter/material.dart';
@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/preferences_provider.dart';
 import '../services/user_preferences_service.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
 
 class PreferencesScreen extends ConsumerStatefulWidget {
   const PreferencesScreen({Key? key}) : super(key: key);
@@ -39,6 +38,7 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.forestMid,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Reset All?', style: TextStyle(color: AppColors.parchment)),
         content: const Text(
           'This will clear your dietary restrictions, keywords, and hidden products.',
@@ -68,13 +68,15 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
   Widget build(BuildContext context) {
     final restAsync = ref.watch(restrictionsProvider);
     final keywordsAsync = ref.watch(avoidedKeywordsProvider);
-    final dislikedAsync = ref.watch(dislikedBarcodesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.forestDeep,
+      // 🌿 Setting background transparent to reveal the Container's decoration
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Preferences', style: TextStyle(color: AppColors.parchment)),
-        backgroundColor: AppColors.forestDeep,
+        title: const Text('Preferences',
+            style: TextStyle(color: AppColors.parchment, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.parchment),
         actions: [
@@ -85,70 +87,83 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
         ],
       ),
       body: Container(
-        decoration: AppTheme.vineBackground,
-        child: restAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.agedGold)),
-          error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.red))),
-          data: (restrictions) => ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              const _SectionHeader(title: 'Dietary Restrictions'),
-              const SizedBox(height: 12),
-              _RestrictionContainer(
-                children: [
-                  _RestrictionTile(
-                    icon: '🌱',
-                    label: 'Vegan',
-                    value: restrictions.vegan,
-                    onChanged: (v) => ref.read(restrictionsProvider.notifier).toggle(vegan: v),
-                  ),
-                  _RestrictionTile(
-                    icon: '🥦',
-                    label: 'Vegetarian',
-                    value: restrictions.vegetarian,
-                    onChanged: (v) => ref.read(restrictionsProvider.notifier).toggle(vegetarian: v),
-                  ),
-                  _RestrictionTile(
-                    icon: '🌾',
-                    label: 'Gluten-Free',
-                    value: restrictions.glutenFree,
-                    onChanged: (v) => ref.read(restrictionsProvider.notifier).toggle(glutenFree: v),
-                  ),
-                  _RestrictionTile(
-                    icon: '🥛',
-                    label: 'Dairy-Free',
-                    value: restrictions.dairyFree,
-                    onChanged: (v) => ref.read(restrictionsProvider.notifier).toggle(dairyFree: v),
-                  ),
-                ],
-              ),
+        width: double.infinity,
+        height: double.infinity,
+        // 🌿 Hardcoded Botanical Decoration
+        decoration: const BoxDecoration(
+          color: AppColors.forestDeep,
+          image: DecorationImage(
+            image: AssetImage('lib/theme/vinebg.png'),
+            repeat: ImageRepeat.repeat,
+            scale: 1.8,
+            opacity: 0.18,
+          ),
+        ),
+        child: SafeArea(
+          child: restAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator(color: AppColors.agedGold)),
+            error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.red))),
+            data: (restrictions) => ListView(
+              padding: const EdgeInsets.all(24),
+              children: [
+                const _SectionHeader(title: 'Dietary Restrictions'),
+                const SizedBox(height: 12),
+                _RestrictionContainer(
+                  children: [
+                    _RestrictionTile(
+                      icon: '🌱',
+                      label: 'Vegan',
+                      value: restrictions.vegan,
+                      onChanged: (v) => ref.read(restrictionsProvider.notifier).toggle(vegan: v),
+                    ),
+                    _RestrictionTile(
+                      icon: '🥦',
+                      label: 'Vegetarian',
+                      value: restrictions.vegetarian,
+                      onChanged: (v) => ref.read(restrictionsProvider.notifier).toggle(vegetarian: v),
+                    ),
+                    _RestrictionTile(
+                      icon: '🌾',
+                      label: 'Gluten-Free',
+                      value: restrictions.glutenFree,
+                      onChanged: (v) => ref.read(restrictionsProvider.notifier).toggle(glutenFree: v),
+                    ),
+                    _RestrictionTile(
+                      icon: '🥛',
+                      label: 'Dairy-Free',
+                      value: restrictions.dairyFree,
+                      onChanged: (v) => ref.read(restrictionsProvider.notifier).toggle(dairyFree: v),
+                    ),
+                  ],
+                ),
 
-              const SizedBox(height: 32),
-              const _SectionHeader(title: 'Avoided Ingredients'),
-              const SizedBox(height: 8),
-              const Text(
-                'Hide products containing specific keywords:',
-                style: TextStyle(color: AppColors.mistGreen, fontSize: 13),
-              ),
-              const SizedBox(height: 12),
-              _buildKeywordInput(),
-              const SizedBox(height: 16),
-              _buildKeywordChips(keywordsAsync),
+                const SizedBox(height: 32),
+                const _SectionHeader(title: 'Avoided Ingredients'),
+                const SizedBox(height: 8),
+                const Text(
+                  'Hide products containing specific keywords:',
+                  style: TextStyle(color: AppColors.mistGreen, fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                _buildKeywordInput(),
+                const SizedBox(height: 16),
+                _buildKeywordChips(keywordsAsync),
 
-              const SizedBox(height: 32),
-              const _SectionHeader(title: 'Strictness'),
-              _RestrictionContainer(
-                children: [
-                  _RestrictionTile(
-                    icon: '❓',
-                    label: 'Show Unknown Status',
-                    value: restrictions.showUnknownProducts,
-                    onChanged: (v) => ref.read(restrictionsProvider.notifier).toggle(showUnknown: v),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 40),
-            ],
+                const SizedBox(height: 32),
+                const _SectionHeader(title: 'Strictness'),
+                _RestrictionContainer(
+                  children: [
+                    _RestrictionTile(
+                      icon: '❓',
+                      label: 'Show Unknown Status',
+                      value: restrictions.showUnknownProducts,
+                      onChanged: (v) => ref.read(restrictionsProvider.notifier).toggle(showUnknown: v),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),
@@ -166,8 +181,11 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
               hintText: 'e.g. Palm Oil',
               hintStyle: TextStyle(color: AppColors.mossGreen.withOpacity(0.5)),
               filled: true,
-              fillColor: AppColors.forestMid.withOpacity(0.5),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              fillColor: AppColors.forestMid.withOpacity(0.4),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.mossGreen.withOpacity(0.2))
+              ),
             ),
             onSubmitted: (_) => _addKeyword(),
           ),
@@ -201,7 +219,7 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
   }
 }
 
-// ── UI Components ─────────────────────────────────────────────────────────────
+// ── Components ─────────────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
   final String title;
@@ -261,7 +279,7 @@ class _RestrictionTile extends StatelessWidget {
       onChanged: onChanged,
       activeColor: AppColors.agedGold,
       activeTrackColor: AppColors.mossGreen,
-      inactiveTrackColor: AppColors.forestDeep,
+      inactiveTrackColor: AppColors.forestDeep.withOpacity(0.5),
     );
   }
 }
