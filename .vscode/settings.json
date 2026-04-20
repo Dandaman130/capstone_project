@@ -1,0 +1,21 @@
+{
+    "sqltools.connections": [
+        {
+            "pgOptions": {
+                "ssl": {
+                    "rejectUnauthorized": false,
+                    "requestCert": false
+                }
+            },
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "driver": "PostgreSQL",
+            "name": "Railway",
+            "database": " postgresql://postgres:cFGvTOMRZauZulyRoryYpJILFUszgorI@postgres.railway.internal:5432/railway",
+            "username": "dan",
+            "connectString": "postgresql://postgres:cFGvTOMRZauZulyRoryYpJILFUszgorI@switchyard.proxy.rlwy.net:29111/railway",
+            "connectionTimeout": 3000
+        }
+    ]
+}

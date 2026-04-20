@@ -1,0 +1,19 @@
+[
+  {
+    "barcode": "737628064502",
+    "product_name": "Silk Almond Milk",
+    "brands": "Silk",
+    "quantity": "946ml",
+    "nutriscore_grade": "b",
+    "ingredients_text": "Filtered water, almonds, calcium carbonate, sea salt"
+  },
+  {
+    "barcode": "123456789012",
+    "product_name": "Granola Bar",
+    "brands": "MockBrand",
+    "quantity": "40g",
+    "nutriscore_grade": "a",
+    "ingredients_text": "Oats, honey, almonds, chocolate chips"
+  }
+
+]
