@@ -1,11 +1,15 @@
 /*
-Current State 12/15/25 Last Modified v(Alpha 2.3)
+Current State 12/15/25 Last Modified v(Alpha 2.4)
 -Search Screen - Product search and browsing
 -Renamed from Screen2
 -Added rate limiting (10 batch searches per minute)
+-Added personalized "Recommended For You" section based on dietary preferences
+-Added View All functionality and ViewAllProductsScreen for full grid browsing
 */
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/session_manager.dart';
 import '../services/scanned_product_cache.dart';
 import '../services/railway_api_service.dart';
 import '../services/rate_limiter_service.dart';
@@ -39,6 +43,9 @@ class _SearchScreenState extends State<SearchScreen> {
   // Loading state for search operation
   bool _isSearching = false;
 
+  // User's saved dietary preferences
+  List<String> _userDietaryPrefs = [];
+
   // ==================== CONFIGURATION ====================
 
   // Categories to display in the main view
@@ -55,11 +62,31 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
-    // Load products from database when screen first opens
+    // Load preferences first, then load the products from database
+    _loadUserPreferences();
     _loadCategoryProducts();
   }
 
   // ==================== DATA LOADING METHODS ====================
+
+  Future<void> _loadUserPreferences() async {
+    // Safety check: make sure someone is logged in
+    if (!SessionManager.isLoggedIn || SessionManager.currentUser == null) return;
+    
+    final prefs = await SharedPreferences.getInstance();
+    final userId = SessionManager.currentUser!.userId;
+    
+    // Get the saved string from local storage
+    final savedPrefsString = prefs.getString('dietary_prefs_$userId') ?? '';
+    
+    setState(() {
+      if (savedPrefsString.isNotEmpty && savedPrefsString != 'None') {
+        _userDietaryPrefs = savedPrefsString.split(', ');
+      } else {
+        _userDietaryPrefs = [];
+      }
+    });
+  }
 
   /// Load products from Railway database organized by categories
   /// Uses rate limiting to prevent excessive API calls (15 batch searches per minute)
@@ -120,7 +147,6 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   /// Search Railway database for products matching the query
-  /// This method is debounced by 500ms in the UI to prevent excessive API calls
   Future<void> _searchDatabase(String query) async {
     // Clear results if search query is empty
     if (query.isEmpty) {
@@ -204,14 +230,13 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       body: Container(
         // Background with sage green color and vine pattern image overlay
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.sageGreen,
           image: DecorationImage(
             image: AssetImage('lib/theme/vinebg.png'),
             fit: BoxFit.none,
             scale: 1.8,
-            // repeat: ImageRepeat.repeat,
-            opacity: 1.0, // Adjust opacity for subtle background effect
+            opacity: 1.0, 
           ),
         ),
         child: Column(
@@ -223,15 +248,15 @@ class _SearchScreenState extends State<SearchScreen> {
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'What are you looking for?',
-                hintStyle: TextStyle(color: AppColors.mutedGreen),
-                prefixIcon: Icon(Icons.search, color: AppColors.sageGreen),
+                hintStyle: const TextStyle(color: AppColors.mutedGreen),
+                prefixIcon: const Icon(Icons.search, color: AppColors.sageGreen),
                 // Show loading spinner while searching
                 suffixIcon: _isSearching
-                    ? SizedBox(
+                    ? const SizedBox(
                         width: 20,
                         height: 20,
                         child: Padding(
-                          padding: const EdgeInsets.all(12.0),
+                          padding: EdgeInsets.all(12.0),
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             color: AppColors.sageGreen,
@@ -251,7 +276,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.lightTan, width: 2),
+                  borderSide: const BorderSide(color: AppColors.lightTan, width: 2),
                 ),
               ),
               onChanged: (value) {
@@ -288,10 +313,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
   // ==================== SEARCH OVERLAY ====================
 
-  /// Build the search results overlay that appears when user types in search bar
-  /// Shows two sections:
-  /// 1. Recently Scanned: Products from local cache matching the query
-  /// 2. Database Results: Products from Railway DB matching the query
   Widget _buildSearchOverlay(List<ScannedProduct> filteredCachedProducts) {
     final bool hasLocalResults = filteredCachedProducts.isNotEmpty;
     final bool hasDbResults = _searchResults.isNotEmpty;
@@ -336,8 +357,8 @@ class _SearchScreenState extends State<SearchScreen> {
                           // -------- RECENTLY SCANNED SECTION --------
                           // Show products from local cache that match search
                           if (hasLocalResults) ...[
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
+                            const Padding(
+                              padding: EdgeInsets.symmetric(
                                 horizontal: 8,
                                 vertical: 8,
                               ),
@@ -506,19 +527,23 @@ class _SearchScreenState extends State<SearchScreen> {
   // ==================== CATEGORY VIEW (Main Screen) ====================
 
   /// Build the main category view showing products organized by category
-  /// Shows "Recently Scanned" section if cache has products, followed by category sections
   Widget _buildCategoryView() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: AppColors.offWhite));
     }
 
     return RefreshIndicator(
       onRefresh: _loadCategoryProducts,
+      color: AppColors.sageGreen,
       child: ListView(
         children: [
           // Show Recently Scanned section if there are cached products
           if (ScannedProductCache.all.isNotEmpty)
             _buildScannedProductsSection(),
+            
+          // Show Recommended Section based on dietary preferences
+          _buildRecommendedSection(),
+          
           // Build sections for each category (Snacks, Beverages, etc.)
           ..._categories.map((category) => _buildCategorySection(category)),
         ],
@@ -526,8 +551,102 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  /// Build the "Recommended For You" section based on saved tags
+  Widget _buildRecommendedSection() {
+    if (_userDietaryPrefs.isEmpty || _categoryProducts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    List<Product> allLoadedProducts = [];
+    for (var productList in _categoryProducts.values) {
+      allLoadedProducts.addAll(productList);
+    }
+
+    final recommendedProducts = allLoadedProducts.where((product) {
+      return _userDietaryPrefs.every((pref) {
+        switch (pref.toLowerCase()) {
+          case 'vegan':
+            return product.isDefinitelyVegan;
+          case 'vegetarian':
+            return product.isDefinitelyVegetarian;
+          case 'gluten-free':
+            return product.isDefinitelyGlutenFree;
+          case 'dairy-free':
+            return product.isDefinitelyDairyFree;
+          default:
+            return false;
+        }
+      });
+    }).toList();
+
+    if (recommendedProducts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(Icons.star, color: AppColors.lightTan, size: 24),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Recommended For You',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.offWhite,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // View All Button for Recommendations
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ViewAllProductsScreen(
+                        title: 'Recommended For You',
+                        products: recommendedProducts,
+                      ),
+                    ),
+                  );
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.offWhite,
+                ),
+                child: const Text('View All'),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 150,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            itemCount: recommendedProducts.length,
+            itemBuilder: (context, index) {
+              return _buildProductCard(recommendedProducts[index]);
+            },
+          ),
+        ),
+        const Divider(height: 32, color: Colors.black12),
+      ],
+    );
+  }
+
   /// Build the "Recently Scanned" section showing products from local cache
-  /// This appears at the top of the main screen before category sections
   Widget _buildScannedProductsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,17 +676,15 @@ class _SearchScreenState extends State<SearchScreen> {
             },
           ),
         ),
-        const Divider(height: 32),
+        const Divider(height: 32, color: Colors.black12),
       ],
     );
   }
 
   /// Build a category section (e.g., "Snacks", "Beverages")
-  /// Shows category title, "View All" button, and horizontal scrolling product list
   Widget _buildCategorySection(String category) {
     final products = _categoryProducts[category] ?? [];
 
-    // Don't show section if no products in this category
     if (products.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -575,7 +692,6 @@ class _SearchScreenState extends State<SearchScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Category header with title and "View All" button
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: Row(
@@ -588,13 +704,16 @@ class _SearchScreenState extends State<SearchScreen> {
                   color: AppColors.offWhite,
                 ),
               ),
+              // View All Button for Category
               TextButton(
                 onPressed: () {
-                  // TODO: Navigate to category page showing all products
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('View all $category products'),
-                      backgroundColor: AppColors.sageGreen,
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ViewAllProductsScreen(
+                        title: _formatCategoryName(category),
+                        products: products,
+                      ),
                     ),
                   );
                 },
@@ -606,7 +725,6 @@ class _SearchScreenState extends State<SearchScreen> {
             ],
           ),
         ),
-        // Horizontal scrolling list of products in this category
         SizedBox(
           height: 150,
           child: ListView.builder(
@@ -618,7 +736,7 @@ class _SearchScreenState extends State<SearchScreen> {
             },
           ),
         ),
-        const Divider(height: 32),
+        const Divider(height: 32, color: Colors.black12),
       ],
     );
   }
@@ -661,7 +779,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           product.imageUrl!,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return Icon(
+                            return const Icon(
                               Icons.image,
                               size: 50,
                               color: AppColors.mutedGreen,
@@ -669,7 +787,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           },
                         ),
                       )
-                    : Icon(Icons.image, size: 50, color: AppColors.sageGreen),
+                    : const Icon(Icons.image, size: 50, color: AppColors.sageGreen),
               ),
               const SizedBox(height: 8),
               Text(
@@ -730,7 +848,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               product.imageUrl!,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
-                                return Icon(
+                                return const Icon(
                                   Icons.shopping_bag,
                                   size: 50,
                                   color: AppColors.sageGreen,
@@ -738,7 +856,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               },
                             ),
                           )
-                        : Icon(
+                        : const Icon(
                             Icons.shopping_bag,
                             size: 50,
                             color: AppColors.sageGreen,
@@ -811,5 +929,122 @@ class _SearchScreenState extends State<SearchScreen> {
       default:
         return Colors.grey;
     }
+  }
+}
+
+// ============================================================================
+// Dedicated Grid View Screen for "View All" Functionality
+// ============================================================================
+
+class ViewAllProductsScreen extends StatelessWidget {
+  final String title;
+  final List<Product> products;
+
+  const ViewAllProductsScreen({
+    Key? key,
+    required this.title,
+    required this.products,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.sageGreen,
+      appBar: AppBar(
+        title: Text(title, style: const TextStyle(color: AppColors.offWhite)),
+        backgroundColor: AppColors.sageGreen,
+        iconTheme: const IconThemeData(color: AppColors.offWhite),
+        elevation: 0,
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          color: AppColors.sageGreen,
+          image: DecorationImage(
+            image: AssetImage('lib/theme/vinebg.png'),
+            fit: BoxFit.none,
+            scale: 1.8,
+            opacity: 1.0,
+          ),
+        ),
+        child: GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2, // 2 items per row
+            childAspectRatio: 0.75, // Adjust this ratio to make cards taller or wider
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: products.length,
+          itemBuilder: (context, index) {
+            final product = products[index];
+            return _buildGridProductCard(context, product);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGridProductCard(BuildContext context, Product product) {
+    return Card(
+      color: AppColors.mutedGreen,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () {
+          // Navigate to the same detail screen when tapped
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProductDetailScreen(railwayProduct: product),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // The image takes up the available vertical space
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppColors.softMint,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            product.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.image, size: 50, color: AppColors.mutedGreen);
+                            },
+                          ),
+                        )
+                      : const Icon(Icons.image, size: 50, color: AppColors.sageGreen),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // The product title
+              Text(
+                product.name,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

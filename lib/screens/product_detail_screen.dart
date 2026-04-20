@@ -1,6 +1,7 @@
-/* Apr 20, 2026 - Added Dietary tags to products. 
+/* Apr 20, 2026 - Added Dietary tags to products and share button
 NOTE: some products don't have this tag in the database */
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/product.dart';
 import '../models/scanned_product.dart';
 import '../services/openfoodfacts_api.dart';
@@ -29,6 +30,30 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void initState() {
     super.initState();
     _loadProductDetails();
+  }
+
+  void _shareProduct() {
+    if (_productDetails == null) return;
+    
+    final product = _productDetails!;
+    
+    // Format the text you want to share
+    final StringBuffer shareText = StringBuffer();
+    shareText.writeln('Check out this product I found!');
+    shareText.writeln('Name: ${product.name}');
+    if (product.brand.isNotEmpty && product.brand != 'Unknown') {
+      shareText.writeln('Brand: ${product.brand}');
+    }
+    if (product.dietaryTags.isNotEmpty) {
+      shareText.writeln('Dietary Info: ${product.dietaryTags.join(', ')}');
+    }
+    shareText.writeln('Barcode: ${product.barcode}');
+    
+    // Trigger the native share dialog
+    Share.share(
+      shareText.toString(), 
+      subject: 'Product Details: ${product.name}'
+    );
   }
 
   Future<void> _loadProductDetails() async {
@@ -97,8 +122,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         title: const Text('Product Details'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: (_isLoading || _productDetails == null) 
+                ? null 
+                : _shareProduct,
+            tooltip: 'Share Product',
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadProductDetails,
+            onPressed: _isLoading ? null : _loadProductDetails,
             tooltip: 'Refresh from OpenFoodFacts',
           ),
         ],
@@ -207,7 +239,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                //Dietary Tags Section
+                // Dietary Tags Section
                 if (product.dietaryTags.isNotEmpty) ...[
                   Wrap(
                     spacing: 8.0, 
@@ -218,11 +250,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         style: TextStyle(
                           fontSize: 12, 
                           fontWeight: FontWeight.w600,
-                          color: Colors.green[800], // Dark green text
+                          color: Colors.green[800], 
                         ),
                       ),
-                      backgroundColor: Colors.green.withValues(alpha: 0.1), // Light green background
-                      side: BorderSide(color: Colors.green.withValues(alpha: 0.3)), // Subtle border
+                      backgroundColor: Colors.green.withValues(alpha: 0.1), 
+                      side: BorderSide(color: Colors.green.withValues(alpha: 0.3)), 
                       padding: EdgeInsets.zero,
                     )).toList(),
                   ),
