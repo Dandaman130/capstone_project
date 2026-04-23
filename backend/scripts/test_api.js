@@ -63,6 +63,14 @@ async function testAPI() {
     console.log('\n--- Test 6: Get by Barcodes ---');
     await makeRequest('/api/products-by-barcodes?barcodes=0000209024937,0000141013129');
 
+    // Test 7: Category browse roots (recursive CTE)
+    console.log('\n--- Test 7: Category Browse Root Rows ---');
+    await makeRequest('/api/category-rows?limit=2');
+
+    // Test 8: Category breadcrumb path (use a sample id)
+    console.log('\n--- Test 8: Category Breadcrumb Path ---');
+    await makeRequest('/api/categories/1/path');
+
     console.log('\n\n=== All tests complete ===');
   } catch (err) {
     console.error('Test failed:', err);
