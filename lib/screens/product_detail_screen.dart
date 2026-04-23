@@ -3,6 +3,8 @@ import '../models/product.dart';
 import '../models/scanned_product.dart';
 import '../services/openfoodfacts_api.dart';
 import '../services/scanned_product_cache.dart';
+import 'package:favorite_button/favorite_button.dart';
+import 'favorites.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product? railwayProduct;
@@ -254,6 +256,41 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
+
+                //FAVORITE BUTTON GOES HERE PROBABLY
+                Text(
+                  'Favorite?',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height:12),
+                Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Center (
+                        child: StarButton(
+                          iconSize: 30.0,
+                          iconColor: Colors.blueAccent,
+                          valueChanged: (isFavorite) {
+                            if (isFavorite) {
+                              if (!globalFavorites.contains(product.barcode)) {globalFavorites.add(product.barcode);
+                              print('Added to favorites: ${product.barcode}');
+                              }
+                            } else {
+                              globalFavorites.remove(product.barcode);
+                              print('Removed from favorites: ${product.barcode}');
+                            }
+                          },
+                        )
+                    )
+                ),
 
                 // Data Source Indicator
                 Container(
