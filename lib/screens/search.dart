@@ -479,14 +479,14 @@ class _SearchScreenState extends State<SearchScreen> {
                                   ),
                                   // Show product image or placeholder
                                   child:
-                                      product.resolvedImageUrl != null &&
-                                          product.resolvedImageUrl!.isNotEmpty
+                                      product.imageUrl != null &&
+                                          product.imageUrl!.isNotEmpty
                                       ? ClipRRect(
                                           borderRadius: BorderRadius.circular(
                                             6,
                                           ),
                                           child: Image.network(
-                                            product.resolvedImageUrl!,
+                                            product.imageUrl!,
                                             fit: BoxFit.cover,
                                             errorBuilder:
                                                 (context, error, stackTrace) {
@@ -711,11 +711,11 @@ class _SearchScreenState extends State<SearchScreen> {
                   color: AppColors.softMint,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: product.resolvedImageUrl != null && product.resolvedImageUrl!.isNotEmpty
+                child: product.imageUrl != null && product.imageUrl!.isNotEmpty
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
-                          product.resolvedImageUrl!,
+                          product.imageUrl!,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return Icon(
