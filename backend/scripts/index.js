@@ -436,6 +436,76 @@ app.get('/api/debug/stats', async (req, res) => {
   }
 });
 
+// Get root categories (level 0 categories)
+app.get('/api/categories/root', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ error: 'Database not configured' });
+  }
+  try {
+    const limitRaw = req.query.limit;
+    const limit = Number.parseInt(limitRaw ?? '10', 10);
+    const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 10;
+
+    // Default behavior: return meaningful, populated roots.
+    // - include_all_languages=true disables the en:-only filter
+    // - include_empty=true allows categories with 0 products
+    const includeAllLanguages = String(req.query.include_all_languages ?? 'false').toLowerCase() == 'true';
+    const includeEmpty = String(req.query.include_empty ?? 'false').toLowerCase() == 'true';
+
+    const languageFilterSql = includeAllLanguages ? '' : "AND c.name LIKE 'en:%'";
+
+    const result = await pool.query(
+      `
+      WITH RECURSIVE root_categories AS (
+        SELECT c.id, c.name, c.level, c.parent_id
+        FROM categories c
+        WHERE c.parent_id IS NULL
+        ${languageFilterSql}
+      ),
+      tree AS (
+        SELECT rc.id AS root_id, rc.id AS category_id
+        FROM root_categories rc
+
+        UNION ALL
+
+        SELECT t.root_id, c.id AS category_id
+        FROM tree t
+        JOIN categories c ON c.parent_id = t.category_id
+      ),
+      root_product_counts AS (
+        SELECT
+          t.root_id,
+          COUNT(DISTINCT p.barcode) AS product_count
+        FROM tree t
+        LEFT JOIN product_categories pc ON pc.category_id = t.category_id
+        LEFT JOIN products p ON p.id = pc.product_id
+        GROUP BY t.root_id
+      )
+      SELECT
+        rc.id,
+        rc.name,
+        rc.level,
+        rc.parent_id,
+        COALESCE(rpc.product_count, 0) AS product_count
+      FROM root_categories rc
+      LEFT JOIN root_product_counts rpc ON rpc.root_id = rc.id
+      ${includeEmpty ? '' : 'WHERE COALESCE(rpc.product_count, 0) > 0'}
+      ORDER BY COALESCE(rpc.product_count, 0) DESC, rc.name ASC
+      LIMIT $1;
+      `,
+      [safeLimit],
+    );
+
+    console.log(
+      `Fetched ${result.rows.length} populated root categories (enOnly=${!includeAllLanguages}, includeEmpty=${includeEmpty})`,
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error in /api/categories/root:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
 // Catch-all route for debugging
 app.use('*', (req, res) => {
   console.log('>>> Catch-all hit:', req.method, req.originalUrl);

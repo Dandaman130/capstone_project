@@ -34,25 +34,35 @@ class RailwayApiService {
   // Get product by barcode
   static Future<Product?> getProductByBarcode(String barcode) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/products/$barcode'),
+      final normalized = barcode.trim();
+      final url = Uri.parse('$baseUrl/api/products/$normalized');
+
+      print('[RailwayApi] GET $url');
+
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Request timeout');
+        },
       );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return Product.fromJson(data);
-      } else if (response.statusCode == 404) {
+      print('[RailwayApi] status=${response.statusCode} len=${response.body.length}');
+      if (response.statusCode != 200) {
+        final snippet = response.body.length > 300
+            ? response.body.substring(0, 300)
+            : response.body;
+        print('[RailwayApi] body (snippet): $snippet');
         return null;
-      } else {
-        throw Exception('Failed to load product');
       }
+
+      final data = json.decode(response.body);
+      return Product.fromJson(data);
     } catch (e) {
       print('Error fetching product by barcode: $e');
       return null;
     }
   }
 
-  // Search products by name
   static Future<List<Product>> searchProducts(String query) async {
     try {
       final response = await http.get(
@@ -99,14 +109,19 @@ class RailwayApiService {
     int limit = 20,
   }) async {
     try {
-      final categoriesParam = categories.join(',');
-      final url = '$baseUrl/api/categories-batch?categories=$categoriesParam&limit=$limit';
+      // NOTE: Category names may contain spaces/commas; always URL-encode via queryParameters.
+      final uri = Uri.parse('$baseUrl/api/categories-batch').replace(
+        queryParameters: {
+          'categories': categories.join(','),
+          'limit': limit.toString(),
+        },
+      );
 
-      print('Fetching from URL: $url');
+      print('Fetching from URL: $uri');
       print('Categories requested: $categories');
 
       final response = await http.get(
-        Uri.parse(url),
+        uri,
       ).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
@@ -177,5 +192,42 @@ class RailwayApiService {
       return [];
     }
   }
-}
 
+  // Get root categories (level 0 categories)
+  static Future<List<String>> getRootCategories({int limit = 10}) async {
+    try {
+      final url = '$baseUrl/api/categories/root?limit=$limit';
+      print('Fetching root categories from: $url');
+
+      final response = await http.get(
+        Uri.parse(url),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Request timeout');
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        final categories = data
+            .map((item) {
+              if (item is Map) {
+                return item['name'] ?? item.toString();
+              }
+              return item.toString();
+            })
+            .cast<String>()
+            .toList();
+        print('Found ${categories.length} root categories: $categories');
+        return categories;
+      } else {
+        print('Failed to fetch root categories. Status: ${response.statusCode}');
+        throw Exception('Failed to load root categories');
+      }
+    } catch (e) {
+      print('Error fetching root categories: $e');
+      return [];
+    }
+  }
+}

@@ -39,10 +39,13 @@ class _SearchScreenState extends State<SearchScreen> {
   // Loading state for search operation
   bool _isSearching = false;
 
+  // Root categories fetched from database
+  List<String> _rootCategories = [];
+
   // ==================== CONFIGURATION ====================
 
-  // Categories to display in the main view
-  final List<String> _categories = ['Snacks', 'Beverages'];
+  // Maximum number of root categories to display
+  static const int _maxCategoriesToDisplay = 10;
 
   // Priority products to show first in Snacks category
   final List<String> _prioritySnacksBarcodes = [
@@ -55,13 +58,50 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
-    // Load products from database when screen first opens
-    _loadCategoryProducts();
+    // Load root categories and products from database when screen first opens
+    _loadRootCategories();
   }
 
   // ==================== DATA LOADING METHODS ====================
 
-  /// Load products from Railway database organized by categories
+  /// Load root categories from Railway database
+  /// Then loads products for those categories
+  Future<void> _loadRootCategories() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Fetch root categories from API
+      final categories = await RailwayApiService.getRootCategories(
+        limit: _maxCategoriesToDisplay,
+      );
+
+      if (mounted) {
+        setState(() {
+          _rootCategories = categories;
+        });
+
+        // After loading categories, load products for each category
+        if (categories.isNotEmpty) {
+          await _loadCategoryProducts();
+        } else {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading root categories: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  /// Load products from Railway database organized by root categories
   /// Uses rate limiting to prevent excessive API calls (15 batch searches per minute)
   Future<void> _loadCategoryProducts() async {
     // Check rate limit before making batch API call
@@ -89,19 +129,19 @@ class _SearchScreenState extends State<SearchScreen> {
     // Record the API call for rate limiting tracking
     RateLimiterService.recordCall(RateLimitType.batchSearch);
 
-    // Fetch products by category from Railway API
+    // Fetch products by category from Railway API using dynamic root categories
     final products = await RailwayApiService.getProductsByCategories(
-      _categories,
+      _rootCategories,
       limit: 20,
     );
 
-    // Add priority products to the top of Snacks category
-    if (_prioritySnacksBarcodes.isNotEmpty) {
+    // Add priority products to the top of Snacks category if it exists
+    if (_prioritySnacksBarcodes.isNotEmpty && products.containsKey('Snacks')) {
       final priorityProducts = await RailwayApiService.getProductsByBarcodes(
         _prioritySnacksBarcodes,
       );
 
-      if (priorityProducts.isNotEmpty && products.containsKey('Snacks')) {
+      if (priorityProducts.isNotEmpty) {
         // Remove priority products from regular list to avoid duplicates
         final regularSnacks = products['Snacks']!.where((product) {
           return !_prioritySnacksBarcodes.contains(product.barcode);
@@ -113,10 +153,12 @@ class _SearchScreenState extends State<SearchScreen> {
       }
     }
 
-    setState(() {
-      _categoryProducts = products;
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _categoryProducts = products;
+        _isLoading = false;
+      });
+    }
   }
 
   /// Search Railway database for products matching the query
@@ -437,14 +479,14 @@ class _SearchScreenState extends State<SearchScreen> {
                                   ),
                                   // Show product image or placeholder
                                   child:
-                                      product.imageUrl != null &&
-                                          product.imageUrl!.isNotEmpty
+                                      product.resolvedImageUrl != null &&
+                                          product.resolvedImageUrl!.isNotEmpty
                                       ? ClipRRect(
                                           borderRadius: BorderRadius.circular(
                                             6,
                                           ),
                                           child: Image.network(
-                                            product.imageUrl!,
+                                            product.resolvedImageUrl!,
                                             fit: BoxFit.cover,
                                             errorBuilder:
                                                 (context, error, stackTrace) {
@@ -505,22 +547,37 @@ class _SearchScreenState extends State<SearchScreen> {
 
   // ==================== CATEGORY VIEW (Main Screen) ====================
 
-  /// Build the main category view showing products organized by category
+  /// Build the main category view showing products organized by root categories
   /// Shows "Recently Scanned" section if cache has products, followed by category sections
+  /// The entire view is scrollable with 10 root categories loaded
   Widget _buildCategoryView() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
+    if (_rootCategories.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            'No categories available',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
     return RefreshIndicator(
-      onRefresh: _loadCategoryProducts,
+      onRefresh: () async {
+        await _loadRootCategories();
+      },
       child: ListView(
         children: [
           // Show Recently Scanned section if there are cached products
           if (ScannedProductCache.all.isNotEmpty)
             _buildScannedProductsSection(),
-          // Build sections for each category (Snacks, Beverages, etc.)
-          ..._categories.map((category) => _buildCategorySection(category)),
+          // Build sections for each root category dynamically
+          ..._rootCategories.map((category) => _buildCategorySection(category)),
         ],
       ),
     );
@@ -654,11 +711,11 @@ class _SearchScreenState extends State<SearchScreen> {
                   color: AppColors.softMint,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                child: product.resolvedImageUrl != null && product.resolvedImageUrl!.isNotEmpty
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
-                          product.imageUrl!,
+                          product.resolvedImageUrl!,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return Icon(
