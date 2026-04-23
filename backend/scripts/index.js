@@ -1,5 +1,9 @@
 const express = require('express');
 const { Pool } = require('pg');
+const {
+  getCategoryRows,
+  getCategoryBreadcrumb,
+} = require('./category_browser_queries');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -267,6 +271,65 @@ app.get('/api/categories-batch', async (req, res) => {
     res.json(results);
   } catch (err) {
     console.error('Error in /api/categories-batch:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Category browse rows for hierarchical search UI.
+// If parent_id is omitted, this returns root category rows.
+// If parent_id is provided, this returns that category's immediate children as rows.
+app.get('/api/category-rows', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ error: 'Database not configured' });
+  }
+
+  try {
+    const payload = await getCategoryRows(pool, {
+      parentCategoryId: req.query.parent_id,
+      limitPerCategory: req.query.limit,
+    });
+
+    res.json({
+      parentCategoryId: payload.parentCategoryId,
+      limitPerCategory: payload.limitPerCategory,
+      rowCount: payload.rows.length,
+      rows: payload.rows,
+    });
+  } catch (err) {
+    console.error('Error in /api/category-rows:', err);
+
+    if (err.message.includes('parent_id') || err.message.includes('limit')) {
+      return res.status(400).json({ error: err.message });
+    }
+
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Breadcrumb path (root -> selected category) for drill-down navigation.
+app.get('/api/categories/:categoryId/path', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ error: 'Database not configured' });
+  }
+
+  try {
+    const breadcrumb = await getCategoryBreadcrumb(pool, req.params.categoryId);
+
+    if (breadcrumb.length === 0) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    res.json({
+      categoryId: Number.parseInt(req.params.categoryId, 10),
+      path: breadcrumb,
+    });
+  } catch (err) {
+    console.error('Error in /api/categories/:categoryId/path:', err);
+
+    if (err.message.includes('category id')) {
+      return res.status(400).json({ error: err.message });
+    }
+
     res.status(500).json({ error: 'Database error' });
   }
 });
