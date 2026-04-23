@@ -59,16 +59,20 @@ async function testAPI() {
     console.log('\n--- Test 5: Batch Categories (Snacks, Beverages) ---');
     await makeRequest('/api/categories-batch?categories=Snacks,Beverages&limit=2');
 
-    // Test 6: Get by barcodes
-    console.log('\n--- Test 6: Get by Barcodes ---');
+    // Test 6: Root categories (most populated)
+    console.log('\n--- Test 6: Root Categories (most populated) ---');
+    await makeRequest('/api/categories/root?limit=10');
+
+    // Test 7: Get by barcodes
+    console.log('\n--- Test 7: Get by Barcodes ---');
     await makeRequest('/api/products-by-barcodes?barcodes=0000209024937,0000141013129');
 
-    // Test 7: Category browse roots (recursive CTE)
-    console.log('\n--- Test 7: Category Browse Root Rows ---');
+    // Test 8: Category browse roots (recursive CTE)
+    console.log('\n--- Test 8: Category Browse Root Rows ---');
     await makeRequest('/api/category-rows?limit=2');
 
-    // Test 8: Category breadcrumb path (use a sample id)
-    console.log('\n--- Test 8: Category Breadcrumb Path ---');
+    // Test 9: Category breadcrumb path (use a sample id)
+    console.log('\n--- Test 9: Category Breadcrumb Path ---');
     await makeRequest('/api/categories/1/path');
 
     console.log('\n\n=== All tests complete ===');
@@ -78,4 +82,3 @@ async function testAPI() {
 }
 
 testAPI();
-
